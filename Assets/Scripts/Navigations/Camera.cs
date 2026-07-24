@@ -234,7 +234,6 @@ public class CameraController2D : MonoBehaviour
     public void SoftFocusOn(Transform target)
     {
         if (target == null) return;
-
         followTarget = target;
         cameraInputLocked = false;
         unlockWhenCentered = true;
@@ -423,7 +422,6 @@ public class CameraController2D : MonoBehaviour
         var managerRoom = RoomManager.Instance?.GetCurrentRoomGrid();
 
         if (localRoom == null || managerRoom == null) return false;
-
         return localRoom == managerRoom ||
                localRoom.gameObject.name == managerRoom.gameObject.name;
     }

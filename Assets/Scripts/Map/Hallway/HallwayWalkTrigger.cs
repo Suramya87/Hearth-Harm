@@ -44,7 +44,6 @@ public class HallwayWalkTrigger : MonoBehaviour
     {
         if (applied && RoomManager.Instance != null && RoomManager.Instance.IsInHallway())
             return;
-
         TryApplyCamera(other);
     }
 
@@ -56,9 +55,10 @@ public class HallwayWalkTrigger : MonoBehaviour
 
     private void TryApplyCamera(Collider2D other)
     {
-        if (cooling || locked) return;
+        if (cooling) return;
         if (!other.CompareTag("Player")) return;
         if (hallway == null || !hallway.IsReady) return;
+        if (!IsLocalPlayerCollider(other)) return;
 
         if (!IsLocalPlayerCollider(other)) return;
 
@@ -75,7 +75,6 @@ public class HallwayWalkTrigger : MonoBehaviour
 
         var netObj = col.GetComponent<Unity.Netcode.NetworkObject>()
                   ?? col.GetComponentInParent<Unity.Netcode.NetworkObject>();
-
         return netObj != null && netObj.IsOwner;
     }
 

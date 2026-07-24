@@ -34,12 +34,12 @@ public class MainMenuController : MonoBehaviour
 
     // ── Multiplayer panel ─────────────────────────────────────────────────
     [Header("Multiplayer Panel")]
-    [SerializeField] private Button          hostButton;
-    [SerializeField] private Button          joinButton;
-    [SerializeField] private TMP_InputField  joinCodeInput;
+    [SerializeField] private Button hostButton;
+    [SerializeField] private Button joinButton;
+    [SerializeField] private TMP_InputField joinCodeInput;
     [SerializeField] private TextMeshProUGUI ugsStatusText;
     [SerializeField] private TextMeshProUGUI multiplayerErrorText;
-    [SerializeField] private Button          backToModeButton;
+    [SerializeField] private Button backToModeButton;
 
     // ── Player name ───────────────────────────────────────────────────────
     [Header("Player Name")]
@@ -47,28 +47,26 @@ public class MainMenuController : MonoBehaviour
 
     // ── Waiting lobby panel ───────────────────────────────────────────────
     [Header("Waiting Lobby Panel")]
-    [SerializeField] private TextMeshProUGUI sessionCodeText;   
-    [SerializeField] private Button          copyCodeButton;    
+    [SerializeField] private TextMeshProUGUI sessionCodeText;
+    [SerializeField] private Button copyCodeButton;
     [SerializeField] private TextMeshProUGUI waitingPlayerCount;
-    [SerializeField] private Transform       waitingPlayerList;
-    [SerializeField] private GameObject      playerSlotPrefab;
-    [SerializeField] private Button          beginCharSelectButton;
-    [SerializeField] private Button          waitingLeaveButton;
+    [SerializeField] private Transform waitingPlayerList;
+    [SerializeField] private GameObject playerSlotPrefab;
+    [SerializeField] private Button beginCharSelectButton;
+    [SerializeField] private Button waitingLeaveButton;
 
     // ── Character select panel ────────────────────────────────────────────
     [Header("Character Select Panel")]
-    [SerializeField] private Transform        charSelectPlayerList;
-    [SerializeField] private List<Button>     characterButtons;
-    [SerializeField] private List<string>     characterNames;
-    [SerializeField] private List<Sprite>     characterSprites;
+    [SerializeField] private Transform charSelectPlayerList;
+    [SerializeField] private List<Button> characterButtons;
+    [SerializeField] private List<string> characterNames;
+    [SerializeField] private List<Image> characterImages; // for vfx
     [SerializeField] private List<GameObject> characterPrefabs;
-    [SerializeField] private TextMeshProUGUI  selectedCharacterName;
-    [SerializeField] private Color            selectedTint   = new Color(1f, 0.85f, 0.2f, 1f);
-    [SerializeField] private Color            deselectedTint = new Color(1f, 1f, 1f, 0.4f);
-    [SerializeField] private Button           readyButton;
-    [SerializeField] private Button           startButton;
-    [SerializeField] private Button           singlePlayerStartButton;
-    [SerializeField] private Button           charSelectLeaveButton;
+    [SerializeField] private TextMeshProUGUI selectedCharacterName;
+    [SerializeField] private Button readyButton;
+    [SerializeField] private Button startButton;
+    [SerializeField] private Button singlePlayerStartButton;
+    [SerializeField] private Button charSelectLeaveButton;
 
     // ── Scenes ────────────────────────────────────────────────────────────
     [Header("Scenes")]
@@ -78,14 +76,14 @@ public class MainMenuController : MonoBehaviour
 
 
     // ── Runtime state ─────────────────────────────────────────────────────
-    private int    selectedCharIndex        = 0;
-    private bool   isReady                  = false;
-    private bool   inCharSelectPhase        = false;
-    private bool   isSinglePlayer           = false;
-    private bool   isConnecting             = false;
-    private bool   lobbySyncCoroutineActive      = false;
-    private bool   alreadySubscribedToLobbySync  = false;
-    private string currentJoinCode          = "---";
+    private int selectedCharIndex = 0;
+    private bool isReady = false;
+    private bool inCharSelectPhase = false;
+    private bool isSinglePlayer = false;
+    private bool isConnecting = false;
+    private bool lobbySyncCoroutineActive = false;
+    private bool alreadySubscribedToLobbySync = false;
+    private string currentJoinCode = "---";
 
     // ─────────────────────────────────────────────────────────────────────
     // Awake — wire up all button listeners
@@ -93,15 +91,15 @@ public class MainMenuController : MonoBehaviour
 
     private void Awake()
     {
-        newGameButton    ?.onClick.AddListener(() => ShowPanel(modePanel));
+        newGameButton?.onClick.AddListener(() => ShowPanel(modePanel));
         multiplayerButton?.onClick.AddListener(() => ShowPanel(multiplayerPanel));
-        creditsButton    ?.onClick.AddListener(OpenCredits);
+        creditsButton?.onClick.AddListener(OpenCredits);
         creditsBackButton?.onClick.AddListener(CloseCredits);
         optionsButton?.onClick.AddListener(OpenSettings);
 
         startSinglePlayerButton?.onClick.AddListener(GoToSinglePlayerCharSelect);
-        backToMainButton       ?.onClick.AddListener(() => ShowPanel(mainMenuPanel));
-        backToModeButton       ?.onClick.AddListener(OnBackToModeClicked);
+        backToMainButton?.onClick.AddListener(() => ShowPanel(mainMenuPanel));
+        backToModeButton?.onClick.AddListener(OnBackToModeClicked);
 
         hostButton?.onClick.AddListener(OnHostClicked);
         joinButton?.onClick.AddListener(OnJoinClicked);
@@ -111,25 +109,18 @@ public class MainMenuController : MonoBehaviour
         copyCodeButton?.onClick.AddListener(OnCopyCodeClicked);
 
         beginCharSelectButton?.onClick.AddListener(OnBeginCharSelectClicked);
-        waitingLeaveButton   ?.onClick.AddListener(OnLeaveClicked);
+        waitingLeaveButton?.onClick.AddListener(OnLeaveClicked);
 
         for (int i = 0; i < characterButtons.Count; i++)
         {
             int idx = i;
             characterButtons[i]?.onClick.AddListener(() => SelectCharacter(idx));
-
-            if (i < characterSprites.Count && characterSprites[i] != null)
-            {
-                var imgs = characterButtons[i]?.GetComponentsInChildren<Image>();
-                if (imgs != null && imgs.Length > 1)
-                    imgs[1].sprite = characterSprites[i];
-            }
         }
 
-        readyButton            ?.onClick.AddListener(OnReadyClicked);
-        startButton            ?.onClick.AddListener(OnStartClicked);
+        readyButton?.onClick.AddListener(OnReadyClicked);
+        startButton?.onClick.AddListener(OnStartClicked);
         singlePlayerStartButton?.onClick.AddListener(OnSinglePlayerStartClicked);
-        charSelectLeaveButton  ?.onClick.AddListener(OnLeaveClicked);
+        charSelectLeaveButton?.onClick.AddListener(OnLeaveClicked);
     }
 
     private void OnDestroy()
@@ -138,27 +129,18 @@ public class MainMenuController : MonoBehaviour
         UnsubscribeFromLobbySync();
     }
 
-    public void QuitGame()
-    {
-    #if UNITY_EDITOR
-            UnityEditor.EditorApplication.isPlaying = false;
-    #else
-            Application.Quit();
-    #endif
-    }
-
     // ─────────────────────────────────────────────────────────────────────
     // Start — initial panel state
     // ─────────────────────────────────────────────────────────────────────
 
     private void Start()
     {
-        creditsPanel         ?.SetActive(false);
-        waitingLobbyPanel    ?.SetActive(false);
-        characterSelectPanel ?.SetActive(false);
-        loadingPanel         ?.SetActive(false);
-        modePanel            ?.SetActive(false);
-        multiplayerPanel     ?.SetActive(false);
+        creditsPanel?.SetActive(false);
+        waitingLobbyPanel?.SetActive(false);
+        characterSelectPanel?.SetActive(false);
+        loadingPanel?.SetActive(false);
+        modePanel?.SetActive(false);
+        multiplayerPanel?.SetActive(false);
 
         beginCharSelectButton?.gameObject.SetActive(false);
 
@@ -167,6 +149,7 @@ public class MainMenuController : MonoBehaviour
         SetMultiplayerError(string.Empty);
         SetMultiplayerButtonsInteractable(false);
 
+        SetUpCharacterSelectMaterials();
         RefreshCharacterButtons();
         ShowPanel(mainMenuPanel);
 
@@ -184,7 +167,7 @@ public class MainMenuController : MonoBehaviour
                string.IsNullOrEmpty(NetworkGameManager.Instance.LocalPlayerId))
             yield return null;
 
-        string key   = $"PlayerName_{NetworkGameManager.Instance.LocalPlayerId}";
+        string key = $"PlayerName_{NetworkGameManager.Instance.LocalPlayerId}";
         string saved = PlayerPrefs.GetString(key, NetworkGameManager.Instance.LocalPlayerName);
         if (playerNameInput != null) playerNameInput.text = saved;
     }
@@ -217,8 +200,8 @@ public class MainMenuController : MonoBehaviour
             if (elapsed > 30f)
             {
                 Debug.LogError("[MainMenuController] Timed out waiting for LobbySync.");
-                lobbySyncCoroutineActive        = false;
-        alreadySubscribedToLobbySync    = false;
+                lobbySyncCoroutineActive = false;
+                alreadySubscribedToLobbySync = false;
                 yield break;
             }
             yield return null;
@@ -269,8 +252,8 @@ public class MainMenuController : MonoBehaviour
             }
         }
 
-        lobbySyncCoroutineActive        = false;
-        alreadySubscribedToLobbySync    = false;
+        lobbySyncCoroutineActive = false;
+        alreadySubscribedToLobbySync = false;
     }
 
     private void Update()
@@ -296,12 +279,12 @@ public class MainMenuController : MonoBehaviour
     {
         var mgr = NetworkGameManager.Instance;
         if (mgr == null) return;
-        mgr.OnSignedIn       += OnUgsSignedIn;
-        mgr.OnSignInFailed   += OnUgsSignInFailed;
+        mgr.OnSignedIn += OnUgsSignedIn;
+        mgr.OnSignInFailed += OnUgsSignInFailed;
         mgr.OnSessionCreated += HandleSessionCreated;
-        mgr.OnSessionJoined  += HandleSessionJoined;
-        mgr.OnSessionLeft    += HandleSessionLeft;
-        mgr.OnSessionError   += HandleSessionError;
+        mgr.OnSessionJoined += HandleSessionJoined;
+        mgr.OnSessionLeft += HandleSessionLeft;
+        mgr.OnSessionError += HandleSessionError;
         mgr.OnPlayersUpdated += HandlePlayersUpdated;
     }
 
@@ -309,12 +292,12 @@ public class MainMenuController : MonoBehaviour
     {
         var mgr = NetworkGameManager.Instance;
         if (mgr == null) return;
-        mgr.OnSignedIn       -= OnUgsSignedIn;
-        mgr.OnSignInFailed   -= OnUgsSignInFailed;
+        mgr.OnSignedIn -= OnUgsSignedIn;
+        mgr.OnSignInFailed -= OnUgsSignInFailed;
         mgr.OnSessionCreated -= HandleSessionCreated;
-        mgr.OnSessionJoined  -= HandleSessionJoined;
-        mgr.OnSessionLeft    -= HandleSessionLeft;
-        mgr.OnSessionError   -= HandleSessionError;
+        mgr.OnSessionJoined -= HandleSessionJoined;
+        mgr.OnSessionLeft -= HandleSessionLeft;
+        mgr.OnSessionError -= HandleSessionError;
         mgr.OnPlayersUpdated -= HandlePlayersUpdated;
     }
 
@@ -322,7 +305,7 @@ public class MainMenuController : MonoBehaviour
     {
         if (LobbySync.Instance == null) return;
         LobbySync.Instance.OnCharSelectPhaseStarted += SwitchToCharSelectPhase;
-        LobbySync.Instance.OnPlayerDataUpdated      += HandlePlayerDataUpdated;
+        LobbySync.Instance.OnPlayerDataUpdated += HandlePlayerDataUpdated;
         alreadySubscribedToLobbySync = true;
         Debug.Log("[MainMenuController] Subscribed to LobbySync.");
     }
@@ -331,7 +314,7 @@ public class MainMenuController : MonoBehaviour
     {
         if (LobbySync.Instance == null) return;
         LobbySync.Instance.OnCharSelectPhaseStarted -= SwitchToCharSelectPhase;
-        LobbySync.Instance.OnPlayerDataUpdated      -= HandlePlayerDataUpdated;
+        LobbySync.Instance.OnPlayerDataUpdated -= HandlePlayerDataUpdated;
     }
 
 
@@ -358,17 +341,17 @@ public class MainMenuController : MonoBehaviour
 
     private void ShowPanel(GameObject target)
     {
-        mainMenuPanel       ?.SetActive(false);
-        modePanel           ?.SetActive(false);
-        multiplayerPanel    ?.SetActive(false);
-        waitingLobbyPanel   ?.SetActive(false);
+        mainMenuPanel?.SetActive(false);
+        modePanel?.SetActive(false);
+        multiplayerPanel?.SetActive(false);
+        waitingLobbyPanel?.SetActive(false);
         characterSelectPanel?.SetActive(false);
-        creditsPanel        ?.SetActive(false);
-        settingsPanel       ?.SetActive(false);
+        creditsPanel?.SetActive(false);
+        settingsPanel?.SetActive(false);
         if (target != null) target.SetActive(true);
     }
 
-    private void OpenCredits()  => ShowPanel(creditsPanel);
+    private void OpenCredits() => ShowPanel(creditsPanel);
     private void CloseCredits() => ShowPanel(mainMenuPanel);
     private void OpenSettings()
     {
@@ -479,13 +462,13 @@ public class MainMenuController : MonoBehaviour
 
     private void HandleSessionLeft()
     {
-        isConnecting             = false;
-        inCharSelectPhase        = false;
-        isReady                  = false;
-        isSinglePlayer           = false;
-        lobbySyncCoroutineActive        = false;
-        alreadySubscribedToLobbySync    = false;
-        currentJoinCode          = "---";
+        isConnecting = false;
+        inCharSelectPhase = false;
+        isReady = false;
+        isSinglePlayer = false;
+        lobbySyncCoroutineActive = false;
+        alreadySubscribedToLobbySync = false;
+        currentJoinCode = "---";
 
         UnsubscribeFromLobbySync();
 
@@ -518,7 +501,7 @@ public class MainMenuController : MonoBehaviour
     private void EnterWaitingLobby(bool isHost)
     {
         inCharSelectPhase = false;
-        isReady           = false;
+        isReady = false;
 
         // Host sees "Begin Char Select" — disabled until LobbySync is ready
         beginCharSelectButton?.gameObject.SetActive(isHost);
@@ -584,15 +567,15 @@ public class MainMenuController : MonoBehaviour
 
         foreach (ulong id in clientIds)
         {
-            int    charIdx  = LobbySync.Instance.GetCharacterIndex(id);
-            bool   ready    = LobbySync.Instance.IsReady(id);
-            bool   isLocal  = id == LobbySync.Instance.LocalClientId;
-            bool   isHost   = id == 0;
+            int charIdx = LobbySync.Instance.GetCharacterIndex(id);
+            bool ready = LobbySync.Instance.IsReady(id);
+            bool isLocal = id == LobbySync.Instance.LocalClientId;
+            bool isHost = id == 0;
             string charName = (charIdx >= 0 && charIdx < characterNames.Count)
                 ? characterNames[charIdx] : "Selecting…";
 
             var info = new SessionPlayerInfo($"{id}", $"Player {id}", charIdx, ready, isLocal, isHost);
-            var go   = Instantiate(playerSlotPrefab, list);
+            var go = Instantiate(playerSlotPrefab, list);
             go.GetComponent<PlayerSlotUI>()?.Setup(info, charName);
         }
 
@@ -611,7 +594,7 @@ public class MainMenuController : MonoBehaviour
         if (inCharSelectPhase) return;
 
         inCharSelectPhase = true;
-        isReady           = false;
+        isReady = false;
         selectedCharIndex = 0;
 
         RefreshCharacterButtons();
@@ -620,7 +603,7 @@ public class MainMenuController : MonoBehaviour
         bool isHost = !isSinglePlayer && (NetworkGameManager.Instance?.IsHost ?? false);
 
         singlePlayerStartButton?.gameObject.SetActive(isSinglePlayer);
-        readyButton            ?.gameObject.SetActive(!isSinglePlayer);
+        readyButton?.gameObject.SetActive(!isSinglePlayer);
 
         if (startButton != null)
         {
@@ -630,6 +613,15 @@ public class MainMenuController : MonoBehaviour
 
         ShowPanel(characterSelectPanel);
         Debug.Log($"[MainMenuController] → Char select. SP={isSinglePlayer} Host={isHost}");
+    }
+
+    private void SetUpCharacterSelectMaterials()
+    {
+        for (int i = 0; i < characterImages.Count; ++i)
+        {
+            Material runtimeMaterial = new Material(characterImages[i].material);
+            characterImages[i].material = runtimeMaterial;
+        }
     }
 
     private void SelectCharacter(int index)
@@ -651,13 +643,39 @@ public class MainMenuController : MonoBehaviour
         {
             if (characterButtons[i] == null) continue;
             bool sel = (i == selectedCharIndex);
-            var  img = characterButtons[i].GetComponent<Image>();
-            if (img != null) img.color = sel ? selectedTint : deselectedTint;
+
+            StartCoroutine(SelectCharVFX(characterImages[i].material, sel));
             characterButtons[i].transform.localScale = sel ? new Vector3(1.1f, 1.1f, 1f) : Vector3.one;
         }
 
         if (selectedCharacterName != null && selectedCharIndex < characterNames.Count)
             selectedCharacterName.text = characterNames[selectedCharIndex];
+    }
+
+    IEnumerator SelectCharVFX(Material material, bool selected = true)
+    {
+        float duration = 2f;
+        float elapsed = 0f;
+        float target = selected ? 1f : 0f;
+        float start = 1f - target;
+        bool done = material.GetFloat("_Amount") == target;
+
+        if (!done)
+        {
+            while (elapsed < duration)
+            {
+                elapsed += Time.deltaTime;
+
+                float t = Mathf.Clamp01(elapsed / duration);
+                float amount = Mathf.Lerp(start, target, t);
+
+                material.SetFloat("_Amount", amount);
+
+                yield return null;
+            }
+        }
+
+        material.SetFloat("_Amount", target);
     }
 
     // ─────────────────────────────────────────────────────────────────────
@@ -697,7 +715,7 @@ public class MainMenuController : MonoBehaviour
         var txt = startButton.GetComponentInChildren<TextMeshProUGUI>();
         if (txt != null)
         {
-            txt.text  = allReady ? "Start Adventure" : "Waiting for players…";
+            txt.text = allReady ? "Start Adventure" : "Waiting for players…";
             txt.color = allReady ? Color.white : new Color(1f, 1f, 1f, 0.4f);
         }
     }
@@ -727,12 +745,12 @@ public class MainMenuController : MonoBehaviour
 
     private void LaunchGame(bool isMultiplayer)
     {
-        CharacterSelection.Index  = selectedCharIndex;
+        CharacterSelection.Index = selectedCharIndex;
         CharacterSelection.Prefab = GetSelectedPrefab();
 
         // Set mode BEFORE loading the scene so GameManager has it ready
         if (isMultiplayer)
-            GameManager.SetMode(NetworkManager.Singleton?.IsHost ?? false 
+            GameManager.SetMode(NetworkManager.Singleton?.IsHost ?? false
                 ? GameMode.Host : GameMode.Client);
         else
             GameManager.SetMode(GameMode.Offline);
@@ -761,7 +779,7 @@ public class MainMenuController : MonoBehaviour
 
     private void OnLeaveClicked()
     {
-        isReady           = false;
+        isReady = false;
         inCharSelectPhase = false;
 
         if (isSinglePlayer)
