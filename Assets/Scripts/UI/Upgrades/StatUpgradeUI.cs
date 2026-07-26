@@ -85,7 +85,7 @@ public class StatUpgradeUI : MonoBehaviour
     {
         pendingUpgradeUnits.Clear();
 
-        if (PartyManager.Instance == null || PartyManager.Instance.PartyUnits.Count == 0)
+        if (!PartyManager.IsValid || PartyManager.Instance.PartyUnits.Count == 0)
         {
             Unit fallback = UnitActionSystem.Instance != null
                 ? UnitActionSystem.Instance.GetSelectedUnit()
@@ -128,7 +128,8 @@ public class StatUpgradeUI : MonoBehaviour
 
         currentUpgradeUnit = pendingUpgradeUnits.Dequeue();
 
-        PartyManager.Instance?.SelectUnit(currentUpgradeUnit);
+        if (PartyManager.IsValid)
+            PartyManager.Instance.SelectUnit(currentUpgradeUnit);
         CameraController2D.Instance?.ForceCenterOn(currentUpgradeUnit.transform);
 
         if (panelRoot != null)

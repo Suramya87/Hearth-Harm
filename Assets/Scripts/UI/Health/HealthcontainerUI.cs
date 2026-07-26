@@ -39,7 +39,7 @@ public class HealthContainerUI : MonoBehaviour, IPointerEnterHandler, IPointerEx
         LevelGenerator.OnLevelReady -= OnLevelReady;
         Unbind();
 
-        if (PartyManager.Instance != null)
+        if (PartyManager.IsValid)
             PartyManager.Instance.OnSelectedUnitChanged -= HandleSelectedUnitChanged;
     }
 
@@ -59,7 +59,7 @@ public class HealthContainerUI : MonoBehaviour, IPointerEnterHandler, IPointerEx
 
     private IEnumerator WaitForPartyManagerAndBind()
     {
-        while (PartyManager.Instance == null)
+        while (!PartyManager.IsValid)
             yield return null;
 
         PartyManager.Instance.OnSelectedUnitChanged -= HandleSelectedUnitChanged;
@@ -80,7 +80,7 @@ public class HealthContainerUI : MonoBehaviour, IPointerEnterHandler, IPointerEx
 
         while (t < 10f)
         {
-            if (PartyManager.Instance != null && PartyManager.Instance.SelectedUnit != null)
+            if (PartyManager.IsValid && PartyManager.Instance.SelectedUnit != null)
             {
                 BindToUnit(PartyManager.Instance.SelectedUnit);
                 bindCoroutine = null;
@@ -106,6 +106,24 @@ public class HealthContainerUI : MonoBehaviour, IPointerEnterHandler, IPointerEx
             healthText.text = hc.CurrentHealth.ToString();
 
         OnHealthChanged(hc.CurrentHealth, hc.MaxHealth);
+
+        // If MaxHealth is 0 the player's stats may not have finished initializing yet.
+        // Retry after a short delay so the UI still binds correctly once values are populated.
+        if (hc.MaxHealth <= 0)
+        {
+            Debug.LogWarning("[HealthContainerUI] Bound unit has MaxHealth=0 — stats may not be initialized. Retrying in 1s…");
+            StartCoroutine(RetryBind(hc));
+        }
+    }
+
+    private IEnumerator RetryBind(HealthComponent hc)
+    {
+        yield return new WaitForSeconds(1f);
+        if (hc.MaxHealth > 0 && bound == null) // still valid and not already re-bound
+        {
+            Bind(hc);
+            Debug.Log("[HealthContainerUI] Retry bind succeeded — stats now valid.");
+        }
     }
 
     private void Unbind()

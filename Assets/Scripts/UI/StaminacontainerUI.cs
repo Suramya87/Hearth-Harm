@@ -41,7 +41,7 @@ public class StaminaContainerUI : MonoBehaviour, IPointerEnterHandler, IPointerE
 
     private IEnumerator WaitForPartyManagerAndBind()
     {
-        while (PartyManager.Instance == null)
+        while (!PartyManager.IsValid)
             yield return null;
 
         PartyManager.Instance.OnSelectedUnitChanged -= HandleSelectedUnitChanged;
@@ -59,7 +59,7 @@ public class StaminaContainerUI : MonoBehaviour, IPointerEnterHandler, IPointerE
     {
         LevelGenerator.OnLevelReady -= OnLevelReady;
 
-        if (PartyManager.Instance != null)
+        if (PartyManager.IsValid)
             PartyManager.Instance.OnSelectedUnitChanged -= HandleSelectedUnitChanged;
     }
 
@@ -175,16 +175,39 @@ public class StaminaContainerUI : MonoBehaviour, IPointerEnterHandler, IPointerE
         if (newStats == null)
             return;
 
+        // If maxStamina is 0 the player's stats may not have finished initializing yet.
+        // Don't spawn particles or sync text until values are populated.
+        int effectiveLastStamina = newStats.maxStamina > 0 ? newStats.currentStamina : 0;
+
+        if (newStats.maxStamina <= 0)
+        {
+            Debug.LogWarning("[StaminaContainerUI] Bound unit has maxStamina=0 — stats may not be initialized. Retrying in 1s…");
+            StartCoroutine(RetryBindStats(newStats));
+            return;
+        }
+
         stats = newStats;
-        lastStamina = stats.currentStamina;
+        lastStamina = effectiveLastStamina;
 
         // FULL RESET
         ClearParticles();
-
         SyncParticles();
         SyncText();
 
         Debug.Log($"[StaminaContainerUI] Bound to {unit.name}");
+    }
+
+    private IEnumerator RetryBindStats(PlayerStats stats)
+    {
+        yield return new WaitForSeconds(1f);
+        if (stats.maxStamina > 0 && this.stats == null) // still valid and not already re-bound
+        {
+            stats.currentStamina = lastStamina; // use the value we already read
+            ClearParticles();
+            SyncParticles();
+            SyncText();
+            Debug.Log("[StaminaContainerUI] Retry bind succeeded.");
+        }
     }
 
     private void ClearParticles()

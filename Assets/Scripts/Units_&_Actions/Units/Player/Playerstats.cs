@@ -53,6 +53,7 @@ public class PlayerStats : MonoBehaviour, IHasHealth
 
     private void OnEnable()
     {
+        if (RoomManager.Instance == null) return;
         RoomManager.OnAnyRoomChanged += OnRoomChanged;
 
         if (EnemyManager.Instance != null)
@@ -61,6 +62,7 @@ public class PlayerStats : MonoBehaviour, IHasHealth
 
     private void OnDisable()
     {
+        if (RoomManager.Instance == null) return;
         RoomManager.OnAnyRoomChanged -= OnRoomChanged;
 
         if (EnemyManager.Instance != null)
@@ -85,13 +87,19 @@ public class PlayerStats : MonoBehaviour, IHasHealth
     {
         RefillStaminaToMax();
 
-        if (!GameManager.IsMultiplayer)
+        if (GameManager.Instance != null && GameManager.IsMultiplayer)
         {
-            TurnSystem.Instance?.ForcePlayerTurn();
+            Debug.Log("[PlayerStats] Room entered → stamina refilled.");
         }
-
-        Debug.Log("[PlayerStats] Room entered → stamina refilled" +
-                  (GameManager.IsMultiplayer ? "." : ", player turn forced."));
+        else if (TurnSystem.Instance != null)
+        {
+            TurnSystem.Instance.ForcePlayerTurn();
+            Debug.Log("[PlayerStats] Room entered → stamina refilled, player turn forced.");
+        }
+        else
+        {
+            Debug.Log("[PlayerStats] Room entered → stamina refilled.");
+        }
     }
 
     // ── Stats loading ──────────────────────────────────────────────────────

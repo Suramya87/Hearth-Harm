@@ -116,7 +116,7 @@ public class LevelGenerator : MonoBehaviour
 
         Debug.Log($"[LevelGenerator] {placedRooms.Count} rooms + {spawnedHallways.Count} hallways. " +
                 $"UnifiedWorldGrid cells: {UnifiedWorldGrid.Instance?.AllCells.Count ?? 0}");
-                
+
         OnLevelReady?.Invoke();
     }
  
@@ -543,11 +543,9 @@ public class LevelGenerator : MonoBehaviour
 
     private void SpawnParty(PlacedRoom start)
     {
+        // Only spawn for single-player (party mode / standard play).
+        // Networked players are handled by NetworkedPlayerSpawner separately.
         if (GameManager.IsMultiplayer) return;
-
-        if (Unity.Netcode.NetworkManager.Singleton != null &&
-            Unity.Netcode.NetworkManager.Singleton.IsListening)
-            return;
 
         RoomManager.Instance?.SetCurrentRoom(start);
 
@@ -567,7 +565,17 @@ public class LevelGenerator : MonoBehaviour
             GameObject prefab = playerPrefabs[i];
 
             if (prefab == null)
+            {
+                Debug.LogWarning($"[LevelGenerator] playerPrefabs[{i}] is null — skipping.");
                 continue;
+            }
+
+            if (!prefab.GetComponent<PlayerStats>())
+            {
+                Debug.LogError($"[LevelGenerator] Prefab '{prefab.name}' missing PlayerStats! " +
+                               "HP/stamina bars will not work without it.");
+                continue;
+            }
 
             GridPosition spawnPos = new GridPosition(
                 leaderPos.x + i,
@@ -582,9 +590,17 @@ public class LevelGenerator : MonoBehaviour
 
             Unit unit = player.GetComponent<Unit>();
 
+            // Check that PartyManager has a valid (non-destroyed) instance.
+            if (PartyManager.Instance == null || PartyManager.Instance.gameObject == null)
+            {
+                Debug.LogError("[LevelGenerator] PartyManager.Instance is null or destroyed! " +
+                               "HP/stamina bars will not load.");
+                continue;
+            }
+
             unit?.PlaceInRoomWhenReady(start.roomGrid, spawnPos);
 
-            PartyManager.Instance?.RegisterUnit(unit);
+            PartyManager.Instance.RegisterUnit(unit);
 
             if (i == 0)
                 spawnedPlayer = player;

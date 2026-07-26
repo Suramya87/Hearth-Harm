@@ -216,7 +216,7 @@ public class TurnSystemUI : MonoBehaviour
         if (GameManager.IsMultiplayer && NetworkedTurnSystem.Instance != null)
             turnNumberText.text = "TURN " + NetworkedTurnSystem.Instance.TurnNumber;
         else if (TurnSystem.Instance != null)
-            turnNumberText.text = "TURN " + TurnSystem.Instance.GetTrunNumber();
+            turnNumberText.text = "TURN " + TurnSystem.Instance.GetTurnNumber();
     }
 
     private static void SetOverlay(GameObject obj, bool active)

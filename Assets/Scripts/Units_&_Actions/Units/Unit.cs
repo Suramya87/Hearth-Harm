@@ -28,17 +28,26 @@ public class Unit : MonoBehaviour
 
     private void OnEnable()
     {
+        if (!IsPartyManagerValid()) return;
         if (GetComponent<PlayerStats>() != null)
-            PartyManager.Instance?.RegisterUnit(this);
+            PartyManager.Instance.RegisterUnit(this);
     }
 
     private void OnDisable()
     {
-        PartyManager.Instance?.UnregisterUnit(this);
+        if (!IsPartyManagerValid()) return;
+        PartyManager.Instance.UnregisterUnit(this);
+    }
+
+    /// <summary>Checks that PartyManager.Instance is non-null AND not a destroyed object.</summary>
+    private static bool IsPartyManagerValid()
+    {
+        return PartyManager.Instance != null && PartyManager.Instance.gameObject != null;
     }
 
     private void Awake()
     {
+        if (GameManager.Instance == null) return;
         moveAction  = GetComponent<MoveAction>();
         allActions  = GetComponents<BaseAction>();
         playerStats = GetComponent<PlayerStats>();
@@ -46,7 +55,7 @@ public class Unit : MonoBehaviour
 
     private void Start()
     {
-        if (GameManager.IsMultiplayer)
+        if (GameManager.Instance == null || GameManager.IsMultiplayer)
             StartCoroutine(SubscribeToNetworkedTurnSystem());
         else if (TurnSystem.Instance != null)
             TurnSystem.Instance.OnTurnChanged += OnTurnChanged;
@@ -62,7 +71,7 @@ public class Unit : MonoBehaviour
     {
         if (TurnSystem.Instance != null)
             TurnSystem.Instance.OnTurnChanged -= OnTurnChanged;
-        if (NetworkedTurnSystem.Instance != null)
+        else if (NetworkedTurnSystem.Instance != null)
             NetworkedTurnSystem.Instance.OnTurnChanged -= OnTurnChanged;
     }
 

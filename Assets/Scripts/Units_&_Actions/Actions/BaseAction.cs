@@ -36,7 +36,7 @@ public abstract class BaseAction : MonoBehaviour
 
     protected bool CanExecuteLocally()
     {
-        if (!GameManager.IsMultiplayer) return true;
+        if (GameManager.Instance == null || !GameManager.IsMultiplayer) return true;
         var netObj = unit != null ? unit.GetComponent<Unity.Netcode.NetworkObject>() : null;
         return netObj != null && netObj.IsOwner;
     }

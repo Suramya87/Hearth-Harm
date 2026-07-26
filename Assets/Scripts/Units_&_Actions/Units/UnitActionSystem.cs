@@ -22,6 +22,10 @@ public class UnitActionSystem : MonoBehaviour
     private BaseAction selectedAction;
     private bool       isBusy;
 
+    [SerializeField] private DiceBoxUI diceBoxUI;
+
+    private NetworkedPlayerBridge localBridge;
+
     public bool IsBusy => isBusy;
 
     private void Awake()
@@ -57,7 +61,7 @@ public class UnitActionSystem : MonoBehaviour
             owned = FindLocalOwnedUnit();
             if (owned == null)
             {
-                waited += Time.deltaTime;
+                elapsed += Time.deltaTime;
                 var units =
     FindObjectsByType<Unit>(
         FindObjectsInactive.Exclude);
@@ -92,28 +96,6 @@ public class UnitActionSystem : MonoBehaviour
             Debug.LogWarning("[UnitActionSystem] Timed out waiting for owned unit.");
             yield break;
         }
-
-        // Single player
-        float singlePlayerWaited = 0f;
-
-        while (singlePlayerWaited < 5f)
-        {
-            singlePlayerWaited += Time.deltaTime;
-
-            if (PartyManager.Instance != null &&
-                PartyManager.Instance.SelectedUnit != null)
-            {
-                SetSelectedUnit(PartyManager.Instance.SelectedUnit);
-
-                Debug.Log($"[UnitActionSystem] Synced to PartyManager leader: {selectedUnit.name}");
-
-                yield break;
-            }
-
-            yield return null;
-        }
-
-        Debug.LogWarning("[UnitActionSystem] Failed to sync to PartyManager selected unit.");
     }
 
     private void Update()
@@ -146,34 +128,19 @@ public class UnitActionSystem : MonoBehaviour
 
     public void SetSelectedUnit(Unit unit)
     {
-        foreach (var u in
-    FindObjectsByType<Unit>(
-        FindObjectsInactive.Exclude))
-        {
-            Debug.LogWarning($"[UnitActionSystem] Refused non-owned unit {unit.name}.");
-            return;
-        }
-
-    public void SetSelectedUnit(Unit unit)
-    {
         if (unit == null)
             return;
 
         selectedUnit = unit;
 
-        SetSelectedAction(unit.GetMoveAction());
+        MoveAction moveAction = unit.GetMoveAction();
+        if (moveAction != null) SetSelectedAction(moveAction, notify: false);
 
-        if (selectedUnit != null)
-        {
-            var move = selectedUnit.GetMoveAction();
-            if (move != null) SetSelectedAction(move, notify: false);
-        }
-
-        OnSelectedUnitChange?.Invoke(this, EventArgs.Empty);
+        OnSelectedUnitChanged?.Invoke(this, EventArgs.Empty);
 
         Debug.Log($"[UnitActionSystem] Selected unit: {unit.name}");
     }
-    public void SetSelectedAction(BaseAction action, bool clearDiceForMove)
+    public void SetSelectedAction(BaseAction action, bool notify = true)
     {
         selectedAction = action;
         if (notify) OnSelectedActionChanged?.Invoke(this, EventArgs.Empty);
@@ -243,7 +210,7 @@ public class UnitActionSystem : MonoBehaviour
     {
         if (!GameManager.IsMultiplayer)
             return TurnSystem.Instance == null || TurnSystem.Instance.IsPlayerTurn;
-        return NetworkedTurnSystem.Instance == null ||
+        return NetworkedTurnSystem.Instance != null &&
                NetworkedTurnSystem.Instance.IsPlayerPhase;
     }
 }

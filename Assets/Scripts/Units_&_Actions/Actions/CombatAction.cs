@@ -34,10 +34,10 @@ public class CombatAction : BaseAction
 
     private void Start()
     {
+        if (UnitActionSystem.Instance == null) return;
         if (diceBox == null)
             diceBox = FindFirstObjectByType<DiceBoxUI>();
     }
-
 
     public void HandleActionInput()
     {

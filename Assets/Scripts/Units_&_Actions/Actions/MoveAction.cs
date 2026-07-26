@@ -340,7 +340,7 @@ public class MoveAction : BaseAction
         {
             unit.PlaceInRoomNoMove(finalGrid, finalGP);
 
-            if (PartyManager.Instance != null &&
+            if (PartyManager.IsValid &&
                 unit == PartyManager.Instance.SelectedUnit)
             {
                 TrySetRoomManagerCurrentRoom(finalGrid);
@@ -354,10 +354,9 @@ public class MoveAction : BaseAction
         }
         else
         {
-            var bridge = unit.GetComponent<NetworkedPlayerBridge>();
-
-            if (bridge != null && bridge.IsOwner)
-                bridge.SyncGridPosition(finalGrid, finalGP);
+            var netObj = unit.GetComponent<Unity.Netcode.NetworkObject>();
+            if (netObj != null && netObj.IsOwner)
+                bridge?.SyncGridPosition(finalGrid, finalGP);
         }
 
         OnWorldMoveCompleted?.Invoke(unit, completedPathWorld);

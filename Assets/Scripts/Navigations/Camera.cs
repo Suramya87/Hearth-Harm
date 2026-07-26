@@ -468,7 +468,7 @@ public class CameraController2D : MonoBehaviour
     {
         if (!GameManager.IsMultiplayer)
         {
-            if (PartyManager.Instance != null &&
+            if (PartyManager.IsValid &&
                 PartyManager.Instance.SelectedUnit != null)
             {
                 return PartyManager.Instance.SelectedUnit.transform;

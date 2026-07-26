@@ -13,7 +13,7 @@ public class PartyFollowManager : MonoBehaviour
 
     private IEnumerator SubscribeWhenReady()
     {
-        while (PartyManager.Instance == null)
+        while (!PartyManager.IsValid)
             yield return null;
 
         PartyManager.Instance.OnPartyChanged += HookParty;
@@ -29,7 +29,7 @@ public class PartyFollowManager : MonoBehaviour
 
     private void OnDisable()
     {
-        if (PartyManager.Instance != null)
+        if (PartyManager.IsValid)
             PartyManager.Instance.OnPartyChanged -= HookParty;
         PartyManager.Instance.OnSelectedUnitChanged -= HandleSelectedUnitChanged;
         UnhookAll();
@@ -54,7 +54,7 @@ public class PartyFollowManager : MonoBehaviour
 
     private void UnhookAll()
     {
-        if (PartyManager.Instance == null)
+        if (!PartyManager.IsValid)
             return;
 
         foreach (Unit unit in PartyManager.Instance.PartyUnits)
@@ -118,7 +118,7 @@ public class PartyFollowManager : MonoBehaviour
 
     public void SnapPartyNearLeader()
     {
-        if (PartyManager.Instance == null)
+        if (!PartyManager.IsValid)
             return;
 
         Unit leader = PartyManager.Instance.SelectedUnit;
@@ -184,7 +184,7 @@ public class PartyFollowManager : MonoBehaviour
         if (leader == null)
             return;
 
-        if (PartyManager.Instance == null)
+        if (!PartyManager.IsValid)
             return;
 
         if (leader != PartyManager.Instance.SelectedUnit)
@@ -223,7 +223,7 @@ public class PartyFollowManager : MonoBehaviour
     {
         ClearFollowerQueue();
 
-        if (PartyManager.Instance == null)
+        if (!PartyManager.IsValid)
             return;
 
         Unit leader = PartyManager.Instance.SelectedUnit;
@@ -310,7 +310,7 @@ public class PartyFollowManager : MonoBehaviour
     }
     private bool IsWholePartyInLeaderRoom(Unit leader)
     {
-        if (PartyManager.Instance == null || leader == null)
+        if (!PartyManager.IsValid || leader == null)
             return true;
 
         RoomGrid leaderRoom = leader.GetCurrentRoomGrid();

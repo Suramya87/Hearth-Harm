@@ -36,6 +36,10 @@ public class GameManager : MonoBehaviour
 
     private GameMode _mode;
 
+    // Fallback for SetMode calls made before a GameManager Instance exists.
+    // Useful when MainMenu sets mode before loading a scene that creates one.
+    private static GameMode _fallbackMode;
+
     private void Awake()
     {
         if (Instance != null && Instance != this)
@@ -47,6 +51,15 @@ public class GameManager : MonoBehaviour
         Instance = this;
         DontDestroyOnLoad(gameObject);
         _mode = defaultMode;
+
+        // Apply any fallback mode that was set earlier (e.g. from MainMenu).
+        if (_fallbackMode != GameMode.None)
+        {
+            _mode = _fallbackMode;
+            _fallbackMode = GameMode.None;
+            Debug.Log($"[GameManager] Applied fallback mode → {_mode}");
+        }
+
         Debug.Log($"[GameManager] Mode = {_mode}");
 
         StartCoroutine(InitAnalytics());
@@ -82,13 +95,30 @@ public class GameManager : MonoBehaviour
 
     public static void SetMode(GameMode mode)
     {
-        if (Instance == null)
+        if (Instance != null)
         {
-            Debug.LogWarning("[GameManager] SetMode called before Instance is ready.");
-            return;
+            Instance._mode = mode;
+            Debug.Log($"[GameManager] Mode → {mode}");
         }
-        Instance._mode = mode;
-        Debug.Log($"[GameManager] Mode → {mode}");
+        else
+        {
+            _fallbackMode = mode;
+            Debug.Log($"[GameManager] SetMode({mode}) — no Instance yet, stored as fallback.");
+        }
+    }
+
+    /// <summary>
+    /// Creates a GameManager in the active scene if one doesn't already exist.
+    /// Use when loading into a scene that needs GameManager but can't guarantee one exists.</summary>
+    public static GameManager GetOrCreateInstance()
+    {
+        if (Instance != null) return Instance;
+
+        var go = new GameObject("GameManager");
+        go.AddComponent<GameManager>();
+        DontDestroyOnLoad(go);
+        Debug.Log("[GameManager] Created fallback instance.");
+        return Instance;
     }
 
     public static void SetMultiplayer(bool multiplayer)

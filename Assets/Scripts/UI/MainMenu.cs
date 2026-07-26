@@ -726,7 +726,42 @@ public class MainMenuController : MonoBehaviour
         LaunchGame(isMultiplayer: false);
     }
 
-    public void OnPartymodeStartClicked(){
+    public void OnPartymodeStartClicked()
+    {
+        // Set character selection for the party mode scene to pick up
+        CharacterSelection.Index = selectedCharIndex;
+        CharacterSelection.Prefab = GetSelectedPrefab();
+
+        if (CharacterSelection.Prefab == null)
+        {
+            Debug.LogError("[MainMenuController] PartyMode prefab is null — cannot spawn players.");
+            return;
+        }
+
+        if (!CharacterSelection.Prefab.GetComponent<Unit>())
+        {
+            Debug.LogError($"[MainMenuController] Selected prefab '{CharacterSelection.Prefab.name}' missing Unit component!");
+            return;
+        }
+
+        // Force single-player mode before loading.
+        // This must succeed so SpawnParty doesn't exit early due to IsMultiplayer being true.
+        GameManager.SetMode(GameMode.Offline);
+        Debug.Log($"[MainMenuController] Mode set to Offline (IsMultiplayer={GameManager.IsMultiplayer})");
+
+        // Shut down any lingering NGO session so NetworkObjects in party mode
+        // don't try to spawn and overwrite the Offline mode (undoing our fix)
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+        {
+            Debug.Log("[MainMenuController] Shutting down NGO session…");
+            NetworkManager.Singleton.Shutdown();
+        }
+
+        // Load the party mode scene directly. Unity will throw a clear error if the scene isn't in Build Settings.
+        loadingPanel?.SetActive(true);
+        ShowPanel(null);
+
+        Debug.Log($"[MainMenuController] Loading scene: {PartyModeSceneName}");
         SceneManager.LoadScene(PartyModeSceneName);
     }
 

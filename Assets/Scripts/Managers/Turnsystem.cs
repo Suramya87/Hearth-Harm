@@ -24,6 +24,7 @@ public class TurnSystem : MonoBehaviour
 
     private void Start()
     {
+        if (GameManager.Instance == null) return;
         if (!GameManager.IsMultiplayer && EnemyManager.Instance != null)
             EnemyManager.Instance.OnEnemyTurnsComplete += HandleEnemyTurnsComplete;
     }
@@ -56,7 +57,7 @@ public class TurnSystem : MonoBehaviour
         Debug.Log("[TurnSystem] Player turn forced.");
     }
 
-    public int GetTrunNumber() => turnNumber;
+    public int GetTurnNumber() => turnNumber;
 
     // ── Private ────────────────────────────────────────────────────────────
 
@@ -88,7 +89,7 @@ public class TurnSystem : MonoBehaviour
 
     private static void RecoverPlayerStamina()
     {
-        if (PartyManager.Instance != null &&
+        if (PartyManager.IsValid &&
             PartyManager.Instance.PartyUnits.Count > 0)
         {
             foreach (Unit unit in PartyManager.Instance.PartyUnits)
@@ -127,7 +128,7 @@ public class TurnSystem : MonoBehaviour
 
     private static void InvalidateMoveCache()
     {
-        if (PartyManager.Instance != null &&
+        if (PartyManager.IsValid &&
             PartyManager.Instance.PartyUnits.Count > 0)
         {
             foreach (Unit unit in PartyManager.Instance.PartyUnits)

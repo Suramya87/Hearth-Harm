@@ -33,7 +33,7 @@ public class TurnOrderTokenUI : MonoBehaviour, IPointerClickHandler, IPointerEnt
 
     private void OnEnable()
     {
-        if (PartyManager.Instance != null)
+        if (PartyManager.IsValid)
             PartyManager.Instance.OnSelectedUnitChanged += HandleSelectedUnitChanged;
 
         RefreshVisualState();
@@ -41,7 +41,7 @@ public class TurnOrderTokenUI : MonoBehaviour, IPointerClickHandler, IPointerEnt
 
     private void OnDisable()
     {
-        if (PartyManager.Instance != null)
+        if (PartyManager.IsValid)
             PartyManager.Instance.OnSelectedUnitChanged -= HandleSelectedUnitChanged;
 
         if (flashRoutine != null)
@@ -108,7 +108,7 @@ public class TurnOrderTokenUI : MonoBehaviour, IPointerClickHandler, IPointerEnt
             return;
 
         if (boundPlayer != null &&
-            PartyManager.Instance != null &&
+            PartyManager.IsValid &&
             PartyManager.Instance.SelectedUnit == boundPlayer)
         {
             background.color = selectedColor;
@@ -125,7 +125,8 @@ public class TurnOrderTokenUI : MonoBehaviour, IPointerClickHandler, IPointerEnt
             if (TurnSystem.Instance != null && !TurnSystem.Instance.IsPlayerTurn)
                 return;
 
-            PartyManager.Instance?.SelectUnit(boundPlayer);
+            if (PartyManager.IsValid)
+                PartyManager.Instance.SelectUnit(boundPlayer);
 
             FlashClick();
 
