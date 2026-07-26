@@ -60,6 +60,16 @@ public class GameManager : MonoBehaviour
             Debug.Log($"[GameManager] Applied fallback mode → {_mode}");
         }
 
+        // Detect when loading a fresh scene (no prior MainMenu SetMode call).
+        // If the game starts with None and we're NOT coming from a previous session
+        // (i.e. GameManager.Instance was never previously set), treat it as Offline.
+        // This prevents MainMenu leftovers leaking into PartyModeScene on first load.
+        if (_mode == GameMode.None)
+        {
+            _mode = GameMode.Offline;
+            Debug.Log($"[GameManager] Defaulted to Offline (no prior mode set).");
+        }
+
         Debug.Log($"[GameManager] Mode = {_mode}");
 
         StartCoroutine(InitAnalytics());
@@ -104,6 +114,14 @@ public class GameManager : MonoBehaviour
         {
             _fallbackMode = mode;
             Debug.Log($"[GameManager] SetMode({mode}) — no Instance yet, stored as fallback.");
+        }
+
+        // Treat None as a signal that the scene is loading fresh (no prior session).
+        // Prevents MainMenu's NGO session from leaking into a new single-player scene.
+        if (Instance != null && Instance._mode == GameMode.None)
+        {
+            Instance._mode = GameMode.Offline;
+            Debug.Log($"[GameManager] Corrected stale mode → Offline");
         }
     }
 

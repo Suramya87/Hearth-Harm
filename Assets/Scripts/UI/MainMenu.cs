@@ -744,11 +744,6 @@ public class MainMenuController : MonoBehaviour
             return;
         }
 
-        // Force single-player mode before loading.
-        // This must succeed so SpawnParty doesn't exit early due to IsMultiplayer being true.
-        GameManager.SetMode(GameMode.Offline);
-        Debug.Log($"[MainMenuController] Mode set to Offline (IsMultiplayer={GameManager.IsMultiplayer})");
-
         // Shut down any lingering NGO session so NetworkObjects in party mode
         // don't try to spawn and overwrite the Offline mode (undoing our fix)
         if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)

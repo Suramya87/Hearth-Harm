@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Tilemaps;
@@ -558,6 +559,16 @@ public class LevelGenerator : MonoBehaviour
             return;
         }
 
+        // When loading from MainMenu, NGO shutdown can wipe DontDestroyOnLoad
+        // so PartyManager might not exist yet.  Ensure it does before spawning.
+        if (PartyManager.Instance == null || PartyManager.Instance.gameObject == null)
+        {
+            var go = new GameObject("PartyManager");
+            go.AddComponent<PartyManager>();
+            go.SetActive(true);
+            Debug.Log("[LevelGenerator] Created missing PartyManager instance.");
+        }
+
         GridPosition leaderPos = sp.Value;
 
         for (int i = 0; i < playerPrefabs.Count; i++)
@@ -589,14 +600,6 @@ public class LevelGenerator : MonoBehaviour
                 : $"PartyMember_{i}";
 
             Unit unit = player.GetComponent<Unit>();
-
-            // Check that PartyManager has a valid (non-destroyed) instance.
-            if (PartyManager.Instance == null || PartyManager.Instance.gameObject == null)
-            {
-                Debug.LogError("[LevelGenerator] PartyManager.Instance is null or destroyed! " +
-                               "HP/stamina bars will not load.");
-                continue;
-            }
 
             unit?.PlaceInRoomWhenReady(start.roomGrid, spawnPos);
 
