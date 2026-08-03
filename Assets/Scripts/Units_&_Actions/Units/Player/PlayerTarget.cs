@@ -1,10 +1,6 @@
 using UnityEngine;
 using Unity.Netcode;
 
-/// <summary>
-/// Lives on the player prefab. The static Instance always points to the
-/// LOCAL client's own copy — non-owned instances never register.
-/// </summary>
 public class PlayerTarget : MonoBehaviour
 {
     public static PlayerTarget Instance { get; private set; }
@@ -28,10 +24,6 @@ public class PlayerTarget : MonoBehaviour
         if (Instance == this) Instance = null;
     }
 
-    /// <summary>
-    /// Called by Unit.RegisterWithLocalSystems() to force registration
-    /// immediately after placement (before Start() may run on late-spawned objects).
-    /// </summary>
     public static void ForceRegister(PlayerTarget pt, Unit unit)
     {
         Instance = pt;

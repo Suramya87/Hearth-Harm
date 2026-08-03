@@ -5,7 +5,6 @@ public class UnitAnimator : MonoBehaviour
 {
     [Header("Animator Parameters")]
     [SerializeField] private string paramIsMoving    = "isMoving";
-    // [SerializeField] private string paramIsIdle      = "isIdle";
     [SerializeField] private string paramFacingNorth = "facingNorth";
     [SerializeField] private string paramFacingSouth = "facingSouth";
     [SerializeField] private string paramFacingEast  = "facingEast";
@@ -27,7 +26,6 @@ public class UnitAnimator : MonoBehaviour
         health = GetComponent<HealthComponent>();
 
         hashIsMoving    = Animator.StringToHash(paramIsMoving);
-        // hashIsIdle      = Animator.StringToHash(paramIsIdle);
         hashFacingNorth = Animator.StringToHash(paramFacingNorth);
         hashFacingSouth = Animator.StringToHash(paramFacingSouth);
         hashFacingEast  = Animator.StringToHash(paramFacingEast);

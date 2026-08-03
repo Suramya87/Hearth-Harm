@@ -544,9 +544,13 @@ public class LevelGenerator : MonoBehaviour
 
     private void SpawnParty(PlacedRoom start)
     {
-        // Only spawn for single-player (party mode / standard play).
-        // Networked players are handled by NetworkedPlayerSpawner separately.
-        if (GameManager.IsMultiplayer) return;
+        if (GameManager.IsMultiplayer)
+        {
+            Debug.LogWarning($"[LevelGenerator] SpawnParty SKIPPED — IsMultiplayer={GameManager.IsMultiplayer} Mode={GameManager.Mode}");
+            return;
+        }
+
+        Debug.Log($"[LevelGenerator] SpawnParty STARTING Mode={GameManager.Mode} IsMultiplayer={GameManager.IsMultiplayer} playerPrefabs.Count={playerPrefabs?.Count ?? 0}");
 
         RoomManager.Instance?.SetCurrentRoom(start);
 
@@ -559,8 +563,6 @@ public class LevelGenerator : MonoBehaviour
             return;
         }
 
-        // When loading from MainMenu, NGO shutdown can wipe DontDestroyOnLoad
-        // so PartyManager might not exist yet.  Ensure it does before spawning.
         if (PartyManager.Instance == null || PartyManager.Instance.gameObject == null)
         {
             var go = new GameObject("PartyManager");
@@ -593,7 +595,11 @@ public class LevelGenerator : MonoBehaviour
                 leaderPos.y
             );
 
+            Debug.Log($"[LevelGenerator] Instantiating prefab[{i}] = '{prefab?.name ?? "null"}' at {spawnPos}");
+
             GameObject player = Instantiate(prefab);
+
+            Debug.Log($"[LevelGenerator] Spawned instance '{player.name}' has PlayerStats={player.GetComponent<PlayerStats>() != null}, MoveAction={player.GetComponent<MoveAction>() != null}, Unit={player.GetComponent<Unit>() != null}");
 
             player.name = i == 0
                 ? "Player"

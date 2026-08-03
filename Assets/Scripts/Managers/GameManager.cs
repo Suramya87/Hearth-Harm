@@ -21,7 +21,7 @@ public class GameManager : MonoBehaviour
 
     [Header("Mode")]
     [Tooltip("Starting mode. Overridden at runtime by NetworkBootstrapper or MainMenuController.")]
-    [SerializeField] private GameMode defaultMode = GameMode.Offline;
+    [SerializeField] private GameMode defaultMode = GameMode.None;
 
     // ── Static accessors ───────────────────────────────────────────────────
 
@@ -30,14 +30,14 @@ public class GameManager : MonoBehaviour
     public static bool IsAuthority   => Mode == GameMode.Offline || Mode == GameMode.Host;
     public static bool IsClient      => Mode == GameMode.Client;
 
+    internal static string RawModeString => Instance != null ? Instance._mode.ToString() : "(no instance)";
+
     public static bool AnalyticsReady { get; private set; }
 
     // ── Internal ───────────────────────────────────────────────────────────
 
     private GameMode _mode;
 
-    // Fallback for SetMode calls made before a GameManager Instance exists.
-    // Useful when MainMenu sets mode before loading a scene that creates one.
     private static GameMode _fallbackMode;
 
     private void Awake()
@@ -49,25 +49,30 @@ public class GameManager : MonoBehaviour
         }
 
         Instance = this;
-        DontDestroyOnLoad(gameObject);
-        _mode = defaultMode;
 
-        // Apply any fallback mode that was set earlier (e.g. from MainMenu).
         if (_fallbackMode != GameMode.None)
         {
             _mode = _fallbackMode;
-            _fallbackMode = GameMode.None;
             Debug.Log($"[GameManager] Applied fallback mode → {_mode}");
+
+            _fallbackMode = GameMode.None;
+        }
+        else
+        {
+            _mode = defaultMode;
+            _fallbackMode = GameMode.None;
         }
 
-        // Detect when loading a fresh scene (no prior MainMenu SetMode call).
-        // If the game starts with None and we're NOT coming from a previous session
-        // (i.e. GameManager.Instance was never previously set), treat it as Offline.
-        // This prevents MainMenu leftovers leaking into PartyModeScene on first load.
         if (_mode == GameMode.None)
         {
             _mode = GameMode.Offline;
             Debug.Log($"[GameManager] Defaulted to Offline (no prior mode set).");
+        }
+
+        if (_mode == GameMode.Host || _mode == GameMode.Client)
+        {
+            Debug.LogWarning($"[GameManager] Stale multiplayer mode detected ({_mode}). " +
+                             "Ensure MainMenu sets Offline before loading a party/single-player scene.");
         }
 
         Debug.Log($"[GameManager] Mode = {_mode}");
@@ -116,8 +121,6 @@ public class GameManager : MonoBehaviour
             Debug.Log($"[GameManager] SetMode({mode}) — no Instance yet, stored as fallback.");
         }
 
-        // Treat None as a signal that the scene is loading fresh (no prior session).
-        // Prevents MainMenu's NGO session from leaking into a new single-player scene.
         if (Instance != null && Instance._mode == GameMode.None)
         {
             Instance._mode = GameMode.Offline;
@@ -125,9 +128,6 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Creates a GameManager in the active scene if one doesn't already exist.
-    /// Use when loading into a scene that needs GameManager but can't guarantee one exists.</summary>
     public static GameManager GetOrCreateInstance()
     {
         if (Instance != null) return Instance;

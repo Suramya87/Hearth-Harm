@@ -18,6 +18,15 @@ public class NetworkGameManager : MonoBehaviour
     [Header("Lobby Sync")]
     [SerializeField] private GameObject lobbySyncPrefab;
 
+    // ── External lifecycle control ─────────────────────────────────────────
+    static bool isFullyShutdown = false;
+
+    /// <summary>Set to true when leaving a session or launching party mode. Prevents UGS reinitialization.</summary>
+    public static void RequestFullShutdown() => isFullyShutdown = true;
+
+    /// <summary>Reset the shutdown flag when returning to main menu so multiplayer can be used again.</summary>
+    public static void ReinitializeForNewGame() { isFullyShutdown = false; }
+
     // ── Public state ───────────────────────────────────────────────────────
     public ISession CurrentSession      { get; private set; }
     public bool     IsHost              => NetworkManager.Singleton != null && NetworkManager.Singleton.IsHost;
@@ -43,6 +52,9 @@ public class NetworkGameManager : MonoBehaviour
     private Dictionary<string, int> characterSelections = new();
     private List<SessionPlayerInfo> cachedPlayerList    = new();
 
+    /// <summary>True once UGS has completed its initial sign-in. Prevents double OnSignedIn fires when both InitializeAsync and Widget session are active.</summary>
+    private bool ugsSignedInAlready = false;
+
     // Back-off constants for UGS rate-limit (HTTP 429) retries
     private const int   MaxRetries       = 4;
     private const float BaseDelaySeconds = 2f;   // doubles each attempt
@@ -67,8 +79,12 @@ public class NetworkGameManager : MonoBehaviour
 
     private void Start()
     {
+        if (isFullyShutdown) return;
+
         _ = InitializeAsync();
-        widgetWatchCoroutine = StartCoroutine(WatchForWidgetSession());
+
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+            widgetWatchCoroutine = StartCoroutine(WatchForWidgetSession());
     }
 
     private void OnDestroy() => _ = LeaveSessionAsync();
@@ -137,6 +153,7 @@ public class NetworkGameManager : MonoBehaviour
         await SetAuthDisplayNameAsync(savedName);
 
         Debug.Log($"[NetworkGameManager] Signed in as {LocalPlayerId}");
+        ugsSignedInAlready = true;
         OnSignedIn?.Invoke();
     }
 
@@ -408,6 +425,12 @@ public async Task CreateSessionAsync()
     public void SyncExternalSession(ISession session)
     {
         if (CurrentSession != null || sessionEventFired) return;
+        // Avoid double-firing OnSignedIn when both InitializeAsync and Widget detection complete concurrently.
+        if (!ugsSignedInAlready && AuthenticationService.Instance.IsSignedIn)
+        {
+            Debug.Log("[NetworkGameManager] UGS already signed in via async init — skipping external sync.");
+            return;
+        }
 
         CurrentSession    = session;
         sessionEventFired = true;
@@ -453,13 +476,13 @@ public async Task CreateSessionAsync()
             Debug.LogWarning($"[NetworkGameManager] Leave error (non-fatal): {e.Message}");
         }
 
-        // Shut down NGO only if it was started
         if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
         {
             NetworkManager.Singleton.Shutdown();
         }
 
         isLeavingSession = false;
+        ugsSignedInAlready = false; 
         OnSessionLeft?.Invoke();
     }
 

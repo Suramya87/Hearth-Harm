@@ -1,13 +1,50 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class PartyFollowManager : MonoBehaviour
 {
+    // ── Singleton ────────────────────────────────────────────────────────
+
+    private static PartyFollowManager instance;
+
+    public static PartyFollowManager Instance
+    {
+        get => instance;
+        set => instance = value;
+    }
+
+    public static PartyFollowManager GetOrCreateInstance()
+    {
+        if (instance != null) return instance;
+        var go = new GameObject("PartyFollowManager");
+        instance = go.AddComponent<PartyFollowManager>();
+        DontDestroyOnLoad(go);
+        Debug.Log("[PartyFollowManager] Created fallback instance via GetOrCreateInstance.");
+        return instance;
+    }
+
+    private void Awake()
+    {
+        if (instance != null && instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+        instance = this;
+        DontDestroyOnLoad(gameObject);
+    }
+
     [SerializeField] private float followerMoveSpeed = 10f;
+
+    private readonly HashSet<Unit> subscribedUnits = new();
+
+    private static bool diagnosticPrinted;
 
     private void OnEnable()
     {
+        Debug.Log($"[PartyFollowManager] Enabled — GameMode={GameManager.Mode} IsMultiplayer={GameManager.IsMultiplayer}");
         StartCoroutine(SubscribeWhenReady());
     }
 
@@ -16,56 +53,92 @@ public class PartyFollowManager : MonoBehaviour
         while (!PartyManager.IsValid)
             yield return null;
 
-        PartyManager.Instance.OnPartyChanged += HookParty;
+        PartyManager.Instance.OnPartyChanged += HookLateJoiner;
         PartyManager.Instance.OnSelectedUnitChanged += HandleSelectedUnitChanged;
+
+        Debug.Log($"[PartyFollowManager] SubscribeWhenReady started — waiting for ≥2 party units (current: {PartyManager.Instance.PartyUnits.Count})");
 
         while (PartyManager.Instance.PartyUnits.Count < 2)
             yield return null;
 
-        HookParty();
+        Debug.Log($"[PartyFollowManager] Found ≥2 party units. Now subscribing all {PartyManager.Instance.PartyUnits.Count}");
+        foreach (Unit unit in PartyManager.Instance.PartyUnits)
+            SubscribeUnit(unit);
 
-        Debug.Log("[PartyFollowManager] Initial party hooked.");
+        Debug.Log($"[PartyFollowManager] Ready! Subscribed {subscribedUnits.Count}/{PartyManager.Instance.PartyUnits.Count} units.");
+
+        if (!diagnosticPrinted)
+        {
+            diagnosticPrinted = true;
+            PrintStartupDiagnostic();
+        }
+
     }
 
     private void OnDisable()
     {
         if (PartyManager.IsValid)
-            PartyManager.Instance.OnPartyChanged -= HookParty;
+            PartyManager.Instance.OnPartyChanged -= HookLateJoiner;
         PartyManager.Instance.OnSelectedUnitChanged -= HandleSelectedUnitChanged;
-        UnhookAll();
+
+        subscribedUnits.Clear();
     }
+
+    private void HookLateJoiner()
+    {
+        if (!PartyManager.IsValid) return;
+
+        Debug.Log($"[PartyFollowManager] HookLateJoiner called — PartyUnits={PartyManager.Instance.PartyUnits.Count}, subscribed={subscribedUnits.Count}");
+
+        PurgeStaleReferences();
+
+        foreach (Unit unit in PartyManager.Instance.PartyUnits)
+            SubscribeUnit(unit);
+    }
+
+    private Unit previousSelectedLeader;
+
     private void HandleSelectedUnitChanged(Unit unit)
     {
-        ClearFollowerQueue();
-        HookParty();
+        var leaderHasMove = unit != null && unit.GetMoveAction() != null;
+        if (leaderHasMove && unit != previousSelectedLeader)
+        {
+            ClearFollowerQueue();
+            previousSelectedLeader = unit;
+        }
+
+        SubscribeUnit(PartyManager.Instance.SelectedUnit);
     }
 
-    private void HookParty()
+    private void PurgeStaleReferences()
     {
-        UnhookAll();
-
-        foreach (Unit unit in PartyManager.Instance.PartyUnits)
+        var snapshot = new List<Unit>(subscribedUnits);
+        foreach (Unit stale in snapshot)
         {
-            MoveAction move = unit.GetMoveAction();
-            if (move != null)
-                move.OnWorldStepCompleted += HandleWorldStepCompleted;
+            if (!stale || !stale.gameObject.activeInHierarchy)
+                subscribedUnits.Remove(stale);
         }
     }
 
-    private void UnhookAll()
+    private void SubscribeUnit(Unit unit)
     {
-        if (!PartyManager.IsValid)
-            return;
+        if (!PartyManager.IsValid || unit == null) return;
 
-        foreach (Unit unit in PartyManager.Instance.PartyUnits)
+        if (subscribedUnits.Contains(unit)) return;
+
+        MoveAction move = unit.GetMoveAction();
+        if (move != null)
         {
-            if (unit == null) continue;
-
-            MoveAction move = unit.GetMoveAction();
-            if (move != null)
-                move.OnWorldStepCompleted -= HandleWorldStepCompleted;
+            move.OnWorldStepCompleted += HandleWorldStepCompleted;
+            subscribedUnits.Add(unit);
+            Debug.Log($"[PartyFollowManager] Subscribed {unit.name} — GameManager.Mode={GameManager.Mode}, moveAction={move != null}");
+        }
+        else
+        {
+            Debug.LogWarning($"[PartyFollowManager] Failed to subscribe {unit.name}: MoveAction is null!");
         }
     }
+
 
     private IEnumerator MoveFollowerToWorldCell(Unit follower, Vector3 cellWorld)
     {
@@ -77,7 +150,7 @@ public class PartyFollowManager : MonoBehaviour
             follower.transform.position.z
         );
 
-        while (Vector2.Distance(follower.transform.position, target) > 0.01f)
+        while (Vector2.Distance(follower.transform.position, target) > 1f)
         {
             follower.transform.position = Vector3.MoveTowards(
                 follower.transform.position,
@@ -178,22 +251,44 @@ public class PartyFollowManager : MonoBehaviour
     private Coroutine followerMoveRoutine;
     private void HandleWorldStepCompleted(Unit leader, Vector3 leaderStepWorld)
     {
-        if (GameManager.IsMultiplayer)
+        Debug.Log($"[PartyFollowManager] OnWorldStepCompleted called — " +
+            $"Mode={GameManager.RawModeString} IsOffline={GameManager.Mode == GameMode.Offline} " +
+            $"leaderNull={leader == null} leaderSelected={(leader != null && PartyManager.IsValid && leader == PartyManager.Instance.SelectedUnit)} " +
+            $"subscribed={subscribedUnits.Contains(leader)}");
+
+        if (GameManager.Mode != GameMode.Offline)
+        {
+            Debug.Log($"[PartyFollowManager] REJECTED — GameManager.Mode={GameManager.Mode}");
             return;
+        }
 
         if (leader == null)
+        {
+            Debug.LogWarning("[PartyFollowManager] REJECTED — leader is null");
             return;
+        }
 
         if (!PartyManager.IsValid)
+        {
+            Debug.LogWarning("[PartyFollowManager] REJECTED — PartyManager not valid");
             return;
+        }
 
         if (leader != PartyManager.Instance.SelectedUnit)
+        {
+            Debug.Log($"[PartyFollowManager] Ignored step from non-selected unit: {leader.name} (selected={PartyManager.Instance.SelectedUnit?.name})");
             return;
+        }
 
         if (IsInCombatRoom(leader) && IsWholePartyInLeaderRoom(leader))
+        {
+            Debug.Log($"[PartyFollowManager] Skipping — in combat with whole party present");
             return;
+        }
 
+        int before = followerStepQueue.Count;
         followerStepQueue.Enqueue(leaderStepWorld);
+        Debug.Log($"[PartyFollowManager] Step accepted → queue {before}→{followerStepQueue.Count}, leader={leader.name}, stepWorld={leaderStepWorld}, subscribedUnits={subscribedUnits.Count}");
 
         if (!followerIsMoving)
             followerMoveRoutine = StartCoroutine(ProcessFollowerStepQueue(leader));
@@ -308,6 +403,56 @@ public class PartyFollowManager : MonoBehaviour
     {
         ClearFollowerQueue();
     }
+
+    /// <summary>Prints a one-shot diagnostic of party mode state.</summary>
+    private void PrintStartupDiagnostic()
+    {
+        var sb = new System.Text.StringBuilder();
+
+        var gmInstanceStr = GameManager.Instance != null ? "exists" : "NULL";
+        var partyMgrStr = PartyManager.IsValid ? "valid" : "invalid/missing";
+        var partyCountStr = PartyManager.IsValid ? PartyManager.Instance.PartyUnits.Count.ToString() : "N/A";
+
+        sb.Append("[PartyFollowManager DIAGNOSTIC] PartyMode state:\n");
+        sb.Append($"  GameManager.Instance = {gmInstanceStr}\n");
+        sb.Append($"  GameManager.Mode     = {GameManager.RawModeString}\n");
+        sb.Append($"  IsMultiplayer        = {GameManager.IsMultiplayer}\n");
+        sb.Append($"  PartyManager         = {partyMgrStr}\n");
+        sb.Append($"  PartyUnits.Count     = {partyCountStr}\n");
+        sb.Append($"  SubscribedCount      = {subscribedUnits.Count}\n");
+
+        if (PartyManager.IsValid)
+        {
+            for (int i = 0; i < PartyManager.Instance.PartyUnits.Count; i++)
+            {
+                var u = PartyManager.Instance.PartyUnits[i];
+                if (u == null) { sb.Append($"    Unit[{i}] = NULL\n"); continue; }
+                var ma = u.GetMoveAction();
+                var moveStr = ma != null ? "yes" : "NULL";
+                var psStr = u.GetComponent<PlayerStats>() != null ? "yes" : "NULL";
+                var gridStr = u.IsInitialized() ? u.GetGridPosition().ToString() : "not init";
+                var roomStr = u.GetCurrentRoomGrid() != null ? u.GetCurrentRoomGrid().gameObject.name : "NULL";
+                sb.Append($"    Unit[{i}] = {u.name} " +
+                    $"MoveAction={moveStr} " +
+                    $"PlayerStats={psStr} " +
+                    $"grid={gridStr} " +
+                    $"room={roomStr}\n");
+            }
+        }
+
+        var turnStr = TurnSystem.Instance != null ? "exists" : "NULL";
+        var roomMgrStr = RoomManager.Instance != null ? "exists" : "NULL";
+        var uasStr = UnitActionSystem.Instance != null ? "exists" : "NULL";
+        var enemyStr = EnemyManager.Instance != null ? "exists" : "NULL";
+
+        sb.Append($"  TurnSystem           = {turnStr}\n");
+        sb.Append($"  RoomManager          = {roomMgrStr}\n");
+        sb.Append($"  UnitActionSystem     = {uasStr}\n");
+        sb.Append($"  EnemyManager         = {enemyStr}\n");
+
+        Debug.Log(sb.ToString());
+    }
+
     private bool IsWholePartyInLeaderRoom(Unit leader)
     {
         if (!PartyManager.IsValid || leader == null)

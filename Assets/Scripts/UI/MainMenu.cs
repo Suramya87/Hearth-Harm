@@ -135,6 +135,8 @@ public class MainMenuController : MonoBehaviour
 
     private void Start()
     {
+        NetworkGameManager.ReinitializeForNewGame();
+
         creditsPanel?.SetActive(false);
         waitingLobbyPanel?.SetActive(false);
         characterSelectPanel?.SetActive(false);
@@ -184,10 +186,6 @@ public class MainMenuController : MonoBehaviour
         SetMultiplayerButtonsInteractable(true);
     }
 
-    /// <summary>
-    /// Waits for LobbySync to be spawned by NGO after a session is established,
-    /// then subscribes to its events. Handles late-join char-select catch-up.
-    /// </summary>
     private IEnumerator SubscribeToLobbySyncWhenReady()
     {
         lobbySyncCoroutineActive = true;
@@ -213,16 +211,12 @@ public class MainMenuController : MonoBehaviour
 
         bool isHost = NetworkGameManager.Instance?.IsHost ?? false;
 
-        // For Widget-path clients/hosts: if the waiting lobby panel isn't showing yet,
-        // enter it now. This covers the case where HandleSessionCreated/Joined never fired.
         if (waitingLobbyPanel != null && !waitingLobbyPanel.activeSelf &&
             (characterSelectPanel == null || !characterSelectPanel.activeSelf))
         {
             EnterWaitingLobby(isHost);
         }
 
-        // Always refresh the begin-char-select button after subscribing.
-        // EnterWaitingLobby sets it active but disabled; we enable it here.
         if (beginCharSelectButton != null)
         {
             beginCharSelectButton.gameObject.SetActive(isHost);
@@ -438,7 +432,6 @@ public class MainMenuController : MonoBehaviour
         currentJoinCode = NetworkGameManager.Instance?.GetJoinCode() ?? "---";
         SetSessionCode(currentJoinCode);
 
-        // Hosts see the code in the waiting lobby — no need to check the terminal
         EnterWaitingLobby(isHost: true);
 
         if (!lobbySyncCoroutineActive)
@@ -450,7 +443,6 @@ public class MainMenuController : MonoBehaviour
         isConnecting = false;
         GameManager.SetMode(GameMode.Client);
 
-        // Clients don't need to display the host's code
         currentJoinCode = "---";
         SetSessionCode("---");
 
@@ -469,6 +461,8 @@ public class MainMenuController : MonoBehaviour
         lobbySyncCoroutineActive = false;
         alreadySubscribedToLobbySync = false;
         currentJoinCode = "---";
+
+        GameManager.SetMode(GameMode.Offline);
 
         UnsubscribeFromLobbySync();
 
@@ -744,15 +738,19 @@ public class MainMenuController : MonoBehaviour
             return;
         }
 
-        // Shut down any lingering NGO session so NetworkObjects in party mode
-        // don't try to spawn and overwrite the Offline mode (undoing our fix)
         if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
         {
             Debug.Log("[MainMenuController] Shutting down NGO session…");
             NetworkManager.Singleton.Shutdown();
         }
+        NetworkGameManager.RequestFullShutdown();
 
-        // Load the party mode scene directly. Unity will throw a clear error if the scene isn't in Build Settings.
+        GameManager.SetMode(GameMode.Offline);
+
+        Debug.Log($"[MainMenuController] === Party Mode Start === Mode={GameManager.Mode} IsMultiplayer={GameManager.IsMultiplayer} InstanceAlive={GameManager.Instance != null && GameManager.Instance.gameObject != null}");
+
+        PartyFollowManager.GetOrCreateInstance();
+
         loadingPanel?.SetActive(true);
         ShowPanel(null);
 
@@ -778,7 +776,6 @@ public class MainMenuController : MonoBehaviour
         CharacterSelection.Index = selectedCharIndex;
         CharacterSelection.Prefab = GetSelectedPrefab();
 
-        // Set mode BEFORE loading the scene so GameManager has it ready
         if (isMultiplayer)
             GameManager.SetMode(NetworkManager.Singleton?.IsHost ?? false
                 ? GameMode.Host : GameMode.Client);
@@ -822,7 +819,6 @@ public class MainMenuController : MonoBehaviour
             isConnecting = false;
             SetMultiplayerButtonsInteractable(true);
             _ = NetworkGameManager.Instance?.LeaveSessionAsync();
-            // HandleSessionLeft fires → ShowPanel(mainMenuPanel)
         }
     }
 

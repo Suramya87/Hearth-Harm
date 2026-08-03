@@ -175,8 +175,6 @@ public class StaminaContainerUI : MonoBehaviour, IPointerEnterHandler, IPointerE
         if (newStats == null)
             return;
 
-        // If maxStamina is 0 the player's stats may not have finished initializing yet.
-        // Don't spawn particles or sync text until values are populated.
         int effectiveLastStamina = newStats.maxStamina > 0 ? newStats.currentStamina : 0;
 
         if (newStats.maxStamina <= 0)
@@ -200,9 +198,9 @@ public class StaminaContainerUI : MonoBehaviour, IPointerEnterHandler, IPointerE
     private IEnumerator RetryBindStats(PlayerStats stats)
     {
         yield return new WaitForSeconds(1f);
-        if (stats.maxStamina > 0 && this.stats == null) // still valid and not already re-bound
+        if (stats.maxStamina > 0 && this.stats == null) 
         {
-            stats.currentStamina = lastStamina; // use the value we already read
+            stats.currentStamina = lastStamina; 
             ClearParticles();
             SyncParticles();
             SyncText();

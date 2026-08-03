@@ -76,7 +76,6 @@ public class MoveAction : BaseAction
 
     public void HandleActionInput()
     {
-        // OWNERSHIP GUARD
         if (!CanExecuteLocally())
         {
             Debug.LogWarning("[MoveAction] HandleActionInput blocked — CanExecuteLocally false.");
@@ -86,7 +85,6 @@ public class MoveAction : BaseAction
         if (!Input.GetMouseButtonDown(0)) return;
         if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject()) return;
 
-        // Extra guard — make sure we have a unit and it's initialized.
         if (unit == null || !unit.IsInitialized())
         {
             Debug.LogWarning("[MoveAction] HandleActionInput — unit null or not initialized.");
@@ -148,7 +146,6 @@ public class MoveAction : BaseAction
             return;
         }
 
-        // Legacy fallback.
         var room = unit.GetCurrentRoomGrid();
         if (room == null) return;
         GridPosition gp = room.GetGridPosition(mouseWorld);
@@ -346,9 +343,6 @@ public class MoveAction : BaseAction
                 TrySetRoomManagerCurrentRoom(finalGrid);
             }
 
-            // IMPORTANT:
-            // Spend stamina AFTER RoomManager has been updated,
-            // otherwise IsInCombatRoom() still thinks we are not in combat.
             if (playerStats != null && IsInCombatRoom())
                 playerStats.SpendStamina(stamSpent);
         }

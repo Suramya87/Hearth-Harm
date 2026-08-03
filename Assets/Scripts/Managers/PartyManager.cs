@@ -27,7 +27,6 @@ public class PartyManager : MonoBehaviour
 
     private void Awake()
     {
-        // Ensure only one PartyManager exists — destroy duplicates across scenes.
         if (Instance != null && Instance != this)
         {
             Destroy(gameObject);
@@ -73,7 +72,6 @@ public class PartyManager : MonoBehaviour
 
     public void RegisterUnit(Unit unit)
     {
-        // Guard against calling on a destroyed PartyManager (e.g. scene transition gap).
         if (this == null || gameObject == null)
         {
             Debug.LogWarning("[PartyManager] RegisterUnit called on destroyed instance — skipping.");
