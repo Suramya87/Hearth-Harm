@@ -439,6 +439,18 @@ PrefabInstance:
       propertyPath: overlaySortingOrder
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 2460394412495472785, guid: 399d70b87bf268d43b73c2d58aae8c02, type: 3}
+      propertyPath: m_text
+      value: Option A
+      objectReference: {fileID: 0}
+    - target: {fileID: 2604727521164250862, guid: 399d70b87bf268d43b73c2d58aae8c02, type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2604727521164250862, guid: 399d70b87bf268d43b73c2d58aae8c02, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 6111345872895916054, guid: 399d70b87bf268d43b73c2d58aae8c02, type: 3}
       propertyPath: spriteEnd
       value: 
@@ -502,6 +514,10 @@ PrefabInstance:
     - target: {fileID: 8032437583023291969, guid: 399d70b87bf268d43b73c2d58aae8c02, type: 3}
       propertyPath: m_Name
       value: WHOLE UI
+      objectReference: {fileID: 0}
+    - target: {fileID: 8450054710012081037, guid: 399d70b87bf268d43b73c2d58aae8c02, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: -0.000011444092
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -582,7 +598,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PartyManager
   useDebugStartingUnit: 1
   debugStartingUnitIndex: 1
-  selectedUnit: {fileID: 0}
 --- !u!114 &1059453627
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -596,7 +611,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PartyFollowManager
   followerMoveSpeed: 10
-  followerIsMoving: 0
 --- !u!1 &1098999837
 GameObject:
   m_ObjectHideFlags: 0
@@ -1470,6 +1484,7 @@ MonoBehaviour:
   unitLayerMask:
     serializedVersion: 2
     m_Bits: 0
+  diceBoxUI: {fileID: 0}
 --- !u!4 &2097609747
 Transform:
   m_ObjectHideFlags: 0

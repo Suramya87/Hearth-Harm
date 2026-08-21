@@ -1,0 +1,101 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3fac89055f5507346b30c7d383afc5e4, type: 3}
+  m_Name: ItemDatabase
+  m_EditorClassIdentifier: Assembly-CSharp::ItemDatabase
+  sourceCSV: {fileID: 4900000, guid: f79e3da4ad374eb42be2966a85da94bc, type: 3}
+  items:
+  - id: SMK_SWORD_01
+    displayName: Tempered Broadsword
+    description: A properly tempered replacement blade. Increases attack damage.
+    playerClass: 0
+    slot: Weapon
+    baseCost: 6
+    effectType: 0
+    baseEffectValue: 1
+  - id: SMK_SWORD_02
+    displayName: Balanced Broadsword
+    description: A lighter, better-balanced blade that reduces the stamina cost of
+      attacks.
+    playerClass: 0
+    slot: Weapon
+    baseCost: 8
+    effectType: 4
+    baseEffectValue: -1
+  - id: SMK_ARMOR_01
+    displayName: Reinforced Breastplate
+    description: Additional plating protects the torso and increases maximum health.
+    playerClass: 0
+    slot: Armor
+    baseCost: 6
+    effectType: 1
+    baseEffectValue: 5
+  - id: SMK_ARMOR_02
+    displayName: Lightened Plate
+    description: Better-fitted armor with unnecessary weight removed, increasing
+      maximum stamina.
+    playerClass: 0
+    slot: Armor
+    baseCost: 8
+    effectType: 2
+    baseEffectValue: 3
+  - id: SMK_SHIELD_01
+    displayName: Iron Tower Shield
+    description: A massive shield that reduces incoming damage by 1
+    playerClass: 0
+    slot: Shield
+    baseCost: 10
+    effectType: 3
+    baseEffectValue: 1
+  - id: SCON_STAFF_01
+    displayName: Runed Oak Staff
+    description: Arcane runes strengthen the wizard's offensive magic and increase
+      spell damage.
+    playerClass: 2
+    slot: Weapon
+    baseCost: 6
+    effectType: 0
+    baseEffectValue: 1
+  - id: SCON_STAFF_02
+    displayName: Channeler's Staff
+    description: A staff built to channel magic efficiently, reducing the stamina
+      cost of attacks.
+    playerClass: 2
+    slot: Weapon
+    baseCost: 8
+    effectType: 4
+    baseEffectValue: -1
+  - id: SCON_CLOAK_01
+    displayName: Warded Cloak
+    description: Protective enchantments woven into the fabric increase maximum health.
+    playerClass: 2
+    slot: Armor
+    baseCost: 6
+    effectType: 1
+    baseEffectValue: 5
+  - id: SCON_CLOAK_02
+    displayName: Flowing Mana Cloak
+    description: An enchanted cloak that increases maximum stamina for sustained
+      spellcasting.
+    playerClass: 2
+    slot: Armor
+    baseCost: 8
+    effectType: 2
+    baseEffectValue: 3
+  - id: SCON_AMULET_01
+    displayName: Amulet of Preservation
+    description: A protective charm that reduces incoming damage by 1.
+    playerClass: 2
+    slot: Amulet
+    baseCost: 10
+    effectType: 3
+    baseEffectValue: 1

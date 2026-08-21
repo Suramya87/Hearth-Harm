@@ -1,0 +1,11 @@
+ID,Character,DisplayName,Slot,BaseCost,EffectType,EffectValue,Description
+SMK_SWORD_01,Smokestack,Tempered Broadsword,Weapon,6,Damage,1,A properly tempered replacement blade. Increases attack damage.
+SMK_SWORD_02,Smokestack,Balanced Broadsword,Weapon,8,AttackStaminaCost,-1,"A lighter, better-balanced blade that reduces the stamina cost of attacks."
+SMK_ARMOR_01,Smokestack,Reinforced Breastplate,Armor,6,MaxHealth,5,Additional plating protects the torso and increases maximum health.
+SMK_ARMOR_02,Smokestack,Lightened Plate,Armor,8,MaxStamina,3,"Better-fitted armor with unnecessary weight removed, increasing maximum stamina."
+SMK_SHIELD_01,Smokestack,Iron Tower Shield,Shield,10,DamageReduction,1,A massive shield that reduces incoming damage by 1
+SCON_STAFF_01,Sconstance,Runed Oak Staff,Weapon,6,Damage,1,Arcane runes strengthen the wizard's offensive magic and increase spell damage.
+SCON_STAFF_02,Sconstance,Channeler's Staff,Weapon,8,AttackStaminaCost,-1,"A staff built to channel magic efficiently, reducing the stamina cost of attacks."
+SCON_CLOAK_01,Sconstance,Warded Cloak,Armor,6,MaxHealth,5,Protective enchantments woven into the fabric increase maximum health.
+SCON_CLOAK_02,Sconstance,Flowing Mana Cloak,Armor,8,MaxStamina,3,An enchanted cloak that increases maximum stamina for sustained spellcasting.
+SCON_AMULET_01,Sconstance,Amulet of Preservation,Amulet,10,DamageReduction,1,A protective charm that reduces incoming damage by 1.

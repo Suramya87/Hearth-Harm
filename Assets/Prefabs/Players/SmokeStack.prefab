@@ -105,6 +105,7 @@ GameObject:
   - component: {fileID: 6612018139601628313}
   - component: {fileID: 4100548395177007403}
   - component: {fileID: 6990966120302304824}
+  - component: {fileID: 6631558263968091307}
   - component: {fileID: 8494066922487507146}
   - component: {fileID: 843455202767276121}
   - component: {fileID: 3643986616525070629}
@@ -225,6 +226,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 43b3e86e85155bc42ba386ce85d1240e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Unit
+  displayName: Player
   visualOffset: {x: 0, y: 0.75}
 --- !u!114 &4100548395177007403
 MonoBehaviour:
@@ -265,6 +267,20 @@ MonoBehaviour:
   perception: 0
   charisma: 0
   luck: 0
+--- !u!114 &6631558263968091307
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9198468102176965729}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cdc0d1e6556a2da4c83fcb443331c629, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CharacterInventory
+  maxItems: 5
+  items: []
 --- !u!114 &8494066922487507146
 MonoBehaviour:
   m_ObjectHideFlags: 0
