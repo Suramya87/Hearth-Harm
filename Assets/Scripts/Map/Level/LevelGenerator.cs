@@ -550,7 +550,15 @@ public class LevelGenerator : MonoBehaviour
             return;
         }
 
-        Debug.Log($"[LevelGenerator] SpawnParty STARTING Mode={GameManager.Mode} IsMultiplayer={GameManager.IsMultiplayer} playerPrefabs.Count={playerPrefabs?.Count ?? 0}");
+        // Decide which prefab list to use:
+        // - CharacterSelection.Slots > 0 → player chose specific characters in char select (party mode)
+        // - Falls back to scene's hardcoded playerPrefabs (legacy single-player / no selection)
+        bool useSlots = CharacterSelection.SlotCount > 0;
+        int count = useSlots ? CharacterSelection.SlotCount : (playerPrefabs?.Count ?? 0);
+
+        Debug.Log($"[LevelGenerator] SpawnParty STARTING Mode={GameManager.Mode} " +
+                  $"IsMultiplayer={GameManager.IsMultiplayer} useSlots={useSlots} " +
+                  $"count={count} playerPrefabs.Count={playerPrefabs?.Count ?? 0}");
 
         RoomManager.Instance?.SetCurrentRoom(start);
 
@@ -573,13 +581,16 @@ public class LevelGenerator : MonoBehaviour
 
         GridPosition leaderPos = sp.Value;
 
-        for (int i = 0; i < playerPrefabs.Count; i++)
+        for (int i = 0; i < count; i++)
         {
-            GameObject prefab = playerPrefabs[i];
+            GameObject prefab = useSlots
+                ? CharacterSelection.GetPrefabForSlot(i)
+                : playerPrefabs[i];
 
             if (prefab == null)
             {
-                Debug.LogWarning($"[LevelGenerator] playerPrefabs[{i}] is null — skipping.");
+                string source = useSlots ? $"CharacterSelection.Slot[{i}]" : "playerPrefabs";
+                Debug.LogWarning($"[LevelGenerator] {source}[{i}] resolved to null — skipping.");
                 continue;
             }
 
@@ -595,7 +606,7 @@ public class LevelGenerator : MonoBehaviour
                 leaderPos.y
             );
 
-            Debug.Log($"[LevelGenerator] Instantiating prefab[{i}] = '{prefab?.name ?? "null"}' at {spawnPos}");
+            Debug.Log($"[LevelGenerator] Instantiating prefab[{i}] = '{prefab.name}' at {spawnPos}");
 
             GameObject player = Instantiate(prefab);
 
@@ -606,6 +617,9 @@ public class LevelGenerator : MonoBehaviour
                 : $"PartyMember_{i}";
 
             Unit unit = player.GetComponent<Unit>();
+
+            // Assign ring color matching this slot's player index (red/blue/green/yellow)
+            PlayerRingColor.ApplySlotColor(player, i);
 
             unit?.PlaceInRoomWhenReady(start.roomGrid, spawnPos);
 
