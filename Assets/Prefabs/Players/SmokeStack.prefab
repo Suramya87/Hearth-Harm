@@ -279,8 +279,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cdc0d1e6556a2da4c83fcb443331c629, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CharacterInventory
+  itemDatabase: {fileID: 11400000, guid: c410fd2111e44874492cd7ba9fe07997, type: 2}
   maxItems: 5
-  items: []
+  ownedItems: []
 --- !u!114 &8494066922487507146
 MonoBehaviour:
   m_ObjectHideFlags: 0

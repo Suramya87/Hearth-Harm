@@ -28,6 +28,8 @@ public class VendingMachineShopState : MonoBehaviour
         Instance = this;
     }
 
+    public bool HasGeneratedInventory =>
+    knightItems.Count > 0 || mageItems.Count > 0;
     private void OnEnable()
     {
         LevelGenerator.OnLevelReady += GenerateFloorInventory;

@@ -38,10 +38,22 @@ public class CharacterInventory : MonoBehaviour
 
     public bool AddItem(string itemID)
     {
+        if (string.IsNullOrWhiteSpace(itemID))
+            return false;
+
+        if (itemDatabase == null)
+        {
+            Debug.LogError(
+                $"[CharacterInventory] {name} has no ItemDatabase assigned!");
+
+            return false;
+        }
+
         if (IsFull)
         {
             Debug.LogWarning(
                 $"[CharacterInventory] {name}'s inventory is full.");
+
             return false;
         }
 
@@ -49,20 +61,28 @@ public class CharacterInventory : MonoBehaviour
         {
             Debug.LogWarning(
                 $"[CharacterInventory] {name} already owns {itemID}.");
+
             return false;
         }
 
         ItemData data = itemDatabase.Get(itemID);
 
         if (data == null)
+        {
+            Debug.LogError(
+                $"[CharacterInventory] Could not find item '{itemID}'.");
+
             return false;
+        }
 
         PlayerStats stats = GetComponent<PlayerStats>();
 
-        if (stats != null && data.playerClass != stats.playerClass)
+        if (stats != null &&
+            data.playerClass != stats.playerClass)
         {
             Debug.LogWarning(
                 $"[CharacterInventory] {name} cannot equip {data.displayName}.");
+
             return false;
         }
 
@@ -72,11 +92,10 @@ public class CharacterInventory : MonoBehaviour
 
         Debug.Log(
             $"[CharacterInventory] {name} acquired {data.displayName}. " +
-            $"{ownedItems.Count}/{maxItems}");
+            $"Inventory: {ownedItems.Count}/{maxItems}");
 
         return true;
     }
-
     public bool UpgradeItem(string itemID)
     {
         OwnedItem ownedItem = GetOwnedItem(itemID);

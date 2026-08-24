@@ -107,4 +107,16 @@ public class ShopItemCardUI : MonoBehaviour
                 return "";
         }
     }
+
+    public void SetInteractable(bool interactable)
+    {
+        if (button != null)
+            button.interactable = interactable;
+    }
+
+    public void SetStatusText(string text)
+    {
+        if (priceText != null)
+            priceText.text = text;
+    }
 }

@@ -18,6 +18,11 @@ public class CurrencyManager : MonoBehaviour
     [Header("UI Animation")]
     [SerializeField] private float countDuration = 0.5f;
 
+    //comment out later
+    [Header("Debug")]
+    [SerializeField] private bool useDebugCoins = true;
+    [SerializeField] private int debugStartingCoins = 50;
+
     private Coroutine countRoutine;
     private int displayedCoins;
 
@@ -33,8 +38,13 @@ public class CurrencyManager : MonoBehaviour
 
         Instance = this;
 
+        if (useDebugCoins)
+            currentCoins = debugStartingCoins;
+
         displayedCoins = currentCoins;
         RefreshUIImmediate();
+
+        Debug.Log($"[CurrencyManager] Starting with {currentCoins} coins.");
     }
 
     public void AddCoins(int amount)
