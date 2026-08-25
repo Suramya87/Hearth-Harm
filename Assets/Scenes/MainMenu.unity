@@ -11729,13 +11729,13 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1367613122}
-        m_TargetAssemblyTypeName: 
-        m_MethodName: 
-        m_Mode: 1
+      - m_Target: {fileID: 1367613124}
+        m_TargetAssemblyTypeName: MainMenuController, Assembly-CSharp
+        m_MethodName: OnPartyMemberToggle
+        m_Mode: 3
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: 
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
           m_IntArgument: 0
           m_FloatArgument: 0
           m_StringArgument: 
@@ -19720,10 +19720,13 @@ MonoBehaviour:
   beginCharSelectButton: {fileID: 227102826}
   waitingLeaveButton: {fileID: 0}
   partyModeCharSelectPanel: {fileID: 670200576}
-  charSelectPlayerList: {fileID: 113141115}
+  partyModeCharButtonImages:
+  - {fileID: 1968470908}
+  - {fileID: 1767530207}
+  charSelectPlayerList: {fileID: 1489930132}
   characterButtons:
-  - {fileID: 1481506532}
-  - {fileID: 1992466632}
+  - {fileID: 631827815}
+  - {fileID: 1791753463}
   characterNames:
   - SmokeStack
   - Sconstance
@@ -19738,7 +19741,7 @@ MonoBehaviour:
   startButton: {fileID: 1071504409}
   singlePlayerStartButton: {fileID: 279185073}
   partyModeStartButton: {fileID: 1730642774}
-  charSelectLeaveButton: {fileID: 0}
+  charSelectLeaveButton: {fileID: 24747423}
   charSelectSlotContainers: []
   slotCountText: {fileID: 0}
   singlePlayerSceneName: SamUpdatesDOSSS
@@ -20553,9 +20556,9 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1367613124}
+      - m_Target: {fileID: 1367613122}
         m_TargetAssemblyTypeName: MainMenuController, Assembly-CSharp
-        m_MethodName: OnPartymodeStartClicked
+        m_MethodName: 
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -23311,9 +23314,9 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1367613124}
+      - m_Target: {fileID: 0}
         m_TargetAssemblyTypeName: MainMenuController, Assembly-CSharp
-        m_MethodName: OnStartGameClicked
+        m_MethodName: 
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
