@@ -774,7 +774,6 @@ public class MainMenuController : MonoBehaviour
             txt.color = allReady ? Color.white : new Color(1f, 1f, 1f, 0.4f);
         }
     }
-
     // ─────────────────────────────────────────────────────────────────────
     // Party Mode — editor-panel UI refresh (lightweight)
     // Updates count text and start button visibility on your inspector panel
