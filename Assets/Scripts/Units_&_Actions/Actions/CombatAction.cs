@@ -132,11 +132,28 @@ public class CombatAction : BaseAction
 
         if (diceBox != null && actionData.useDiceDamage)
         {
-            int strengthBonus  = playerStats != null ? playerStats.strength : 0;
-            int totalFlatBonus = actionData.flatBonus + strengthBonus;
+            int strengthBonus =
+            playerStats != null
+                ? playerStats.strength
+                : 0;
 
-            yield return diceBox.PlayPhysicsD6Roll(actionData.diceCount, totalFlatBonus, result =>
-            {
+                    CharacterInventory inventory =
+                        GetInventory();
+
+                    int itemBonus =
+                        inventory != null
+                            ? inventory.GetBonusDamage()
+                            : 0;
+
+                    int baseFlatBonus =
+                        actionData.flatBonus + strengthBonus;
+
+                    yield return diceBox.PlayPhysicsD6Roll(
+                        actionData.diceCount,
+                        baseFlatBonus,
+                        itemBonus,
+                        result =>
+                {
                 finalDamage  = Mathf.Max(1, Mathf.RoundToInt(result * actionData.damageMultiplier));
                 diceFinished = true;
             });
@@ -265,15 +282,19 @@ public class CombatAction : BaseAction
         if (actionData == null) return false;
         if (!actionData.requiresEnoughStamina) return true;
         if (playerStats == null) return false;
-        return playerStats.currentStamina >= actionData.staminaCost;
+        return playerStats.currentStamina >= GetEffectiveStaminaCost();
     }
 
     // ---- Helpers ----
 
     private void SpendStamina()
     {
-        if (playerStats == null) return;
-        playerStats.currentStamina = Mathf.Max(0, playerStats.currentStamina - actionData.staminaCost);
+        if (playerStats == null)
+            return;
+
+        int cost = GetEffectiveStaminaCost();
+
+        playerStats.SpendStamina(cost);
     }
 
     private List<GridPosition> PatternAt(GridPosition origin, Vector2Int facing) =>
@@ -316,14 +337,63 @@ public class CombatAction : BaseAction
 
     private int CalculateDamage(List<int> rolls)
     {
-        int strengthBonus = playerStats != null ? playerStats.strength : 0;
-        int total = actionData.useDiceDamage
-            ? actionData.flatBonus + strengthBonus
-            : actionData.baseDamage + strengthBonus;
+        int strengthBonus =
+            playerStats != null
+                ? playerStats.strength
+                : 0;
+
+        CharacterInventory inventory =
+            GetInventory();
+
+        int itemBonus =
+            inventory != null
+                ? inventory.GetBonusDamage()
+                : 0;
+
+        int total =
+            actionData.useDiceDamage
+                ? actionData.flatBonus +
+                  strengthBonus +
+                  itemBonus
+                : actionData.baseDamage +
+                  strengthBonus +
+                  itemBonus;
 
         if (actionData.useDiceDamage)
-            foreach (int r in rolls) total += r;
+        {
+            foreach (int r in rolls)
+                total += r;
+        }
 
-        return Mathf.Max(1, Mathf.RoundToInt(total * actionData.damageMultiplier));
+        return Mathf.Max(
+            1,
+            Mathf.RoundToInt(
+                total *
+                actionData.damageMultiplier));
+    }
+
+    private CharacterInventory GetInventory()
+    {
+        return unit != null
+            ? unit.GetComponent<CharacterInventory>()
+            : null;
+    }
+
+    public int GetEffectiveStaminaCost()
+    {
+        if (actionData == null)
+            return 0;
+
+        int modifier = 0;
+
+        CharacterInventory inventory = GetInventory();
+
+        if (inventory != null)
+            modifier = inventory.GetAttackStaminaCostModifier();
+
+        // Minimum cost is 1.
+        return Mathf.Max(
+            1,
+            actionData.staminaCost + modifier);
     }
 }

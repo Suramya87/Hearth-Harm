@@ -165,6 +165,38 @@ public class HealthComponent : MonoBehaviour
         if (destroyOnDeath) Destroy(gameObject);
         else gameObject.SetActive(false);
     }
+
+    public void SetMaxHealth(int newMaxHealth, bool healByIncrease = true)
+    {
+        newMaxHealth = Mathf.Max(1, newMaxHealth);
+
+        int oldMaxHealth = maxHealth;
+        int increase = newMaxHealth - oldMaxHealth;
+
+        maxHealth = newMaxHealth;
+
+        if (healByIncrease && increase > 0)
+        {
+            _currentHealth =
+                Mathf.Min(
+                    _currentHealth + increase,
+                    maxHealth);
+        }
+        else
+        {
+            _currentHealth =
+                Mathf.Clamp(
+                    _currentHealth,
+                    0,
+                    maxHealth);
+        }
+
+        _lastKnownHealth = _currentHealth;
+
+        OnHealthChanged?.Invoke(
+            _currentHealth,
+            maxHealth);
+    }
 }
 
 public interface IHasHealth { int GetMaxHealth(); }

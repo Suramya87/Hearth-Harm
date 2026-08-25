@@ -13,6 +13,8 @@ public class PlayerStats : MonoBehaviour, IHasHealth
     [Header("Database")]
     public ClassStatsDatabase classStatsDatabase;
 
+    private CharacterInventory inventory;
+
     [Header("Derived Runtime Pools")]
     public int maxHealth;
     public int currentHealth;
@@ -41,6 +43,11 @@ public class PlayerStats : MonoBehaviour, IHasHealth
     private void Awake()
     {
         health = GetComponent<HealthComponent>();
+        inventory = GetComponent<CharacterInventory>();
+
+        if (inventory != null)
+            inventory.OnInventoryChanged += OnInventoryChanged;
+
         ApplyClassStats();
 
         if (health != null)
@@ -67,6 +74,17 @@ public class PlayerStats : MonoBehaviour, IHasHealth
 
         if (EnemyManager.Instance != null)
             EnemyManager.Instance.OnRoomCleared -= OnRoomCleared;
+    }
+
+    private void OnDestroy()
+    {
+        if (inventory != null)
+            inventory.OnInventoryChanged -= OnInventoryChanged;
+    }
+
+    private void OnInventoryChanged()
+    {
+        RecalculateDerivedStats();
     }
 
     private void OnRoomCleared(RoomGrid clearedRoom)
@@ -123,8 +141,29 @@ public class PlayerStats : MonoBehaviour, IHasHealth
         charisma     = stats.charisma;
         luck         = stats.luck;
 
-        maxHealth  = Mathf.Max(1, stats.baseMaxHealth + constitution);
-        maxStamina = Mathf.Max(1, 10 + (dexterity * 2));
+        int equipmentHealth =
+     inventory != null
+         ? inventory.GetBonusMaxHealth()
+         : 0;
+
+        int equipmentStamina =
+            inventory != null
+                ? inventory.GetBonusMaxStamina()
+                : 0;
+
+        maxHealth =
+            Mathf.Max(
+                1,
+                stats.baseMaxHealth +
+                constitution +
+                equipmentHealth);
+
+        maxStamina =
+            Mathf.Max(
+                1,
+                10 +
+                (dexterity * 2) +
+                equipmentStamina);
 
         currentHealth  = maxHealth;
         currentStamina = maxStamina;
@@ -234,18 +273,56 @@ public class PlayerStats : MonoBehaviour, IHasHealth
         int oldCurrentHP   = currentHealth;
         int oldCurrentStam = currentStamina;
 
-        maxHealth  = Mathf.Max(1, baseStats.baseMaxHealth + constitution);
-        maxStamina = Mathf.Max(1, 10 + dexterity * 2);
+        int equipmentHealth =
+    inventory != null
+        ? inventory.GetBonusMaxHealth()
+        : 0;
 
-        int healthIncrease = maxHealth - oldMaxHealth;
-        currentHealth  = healthIncrease > 0
-            ? Mathf.Min(oldCurrentHP + healthIncrease, maxHealth)
-            : Mathf.Clamp(oldCurrentHP, 1, maxHealth);
+        int equipmentStamina =
+            inventory != null
+                ? inventory.GetBonusMaxStamina()
+                : 0;
 
-        currentStamina = Mathf.Clamp(oldCurrentStam, 0, maxStamina);
+        maxHealth =
+            Mathf.Max(
+                1,
+                baseStats.baseMaxHealth +
+                constitution +
+                equipmentHealth);
+
+        maxStamina =
+            Mathf.Max(
+                1,
+                10 +
+                dexterity * 2 +
+                equipmentStamina);
 
         if (health != null)
-            health.SetHealth(currentHealth);
+        {
+            health.SetMaxHealth(maxHealth, true);
+            currentHealth = health.CurrentHealth;
+        }
+        else
+        {
+            int healthIncrease =
+                maxHealth - oldMaxHealth;
+
+            currentHealth =
+                healthIncrease > 0
+                    ? Mathf.Min(
+                        oldCurrentHP + healthIncrease,
+                        maxHealth)
+                    : Mathf.Clamp(
+                        oldCurrentHP,
+                        1,
+                        maxHealth);
+        }
+
+        currentStamina =
+            Mathf.Clamp(
+                oldCurrentStam,
+                0,
+                maxStamina);
 
         OnStaminaChanged?.Invoke(currentStamina, maxStamina);
 

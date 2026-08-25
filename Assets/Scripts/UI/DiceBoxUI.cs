@@ -34,7 +34,8 @@ public class DiceBoxUI : MonoBehaviour
     private readonly List<int> rolls = new();
     private readonly List<GameObject> pendingDiceObjects = new();
     private bool preservingResolvedRoll;
-    private int bonus;
+    private int statBonus;
+    private int itemBonus;
 
     private void Awake()
     {
@@ -56,7 +57,8 @@ public class DiceBoxUI : MonoBehaviour
         if (actionData == null || !actionData.useDiceDamage || actionData.diceCount <= 0)
             return;
 
-        bonus = actionData.flatBonus;
+        statBonus = actionData.flatBonus;
+        itemBonus = 0;
 
         if (resultsText != null)
             resultsText.text = $"{actionData.diceCount}d{(int)actionData.dieType}";
@@ -72,7 +74,7 @@ public class DiceBoxUI : MonoBehaviour
             SpawnDiceIconUnknown();
     }
 
-    public IEnumerator PlayPhysicsD6Roll(int diceCount, int flatBonus, Action<int> onComplete)
+    public IEnumerator PlayPhysicsD6Roll(int diceCount,int flatBonus,int equipmentBonus,Action<int> onComplete)
     {
         if (physicsRoller == null)
         {
@@ -84,8 +86,8 @@ public class DiceBoxUI : MonoBehaviour
         ClearResultsOnly();
         ClearPendingDice();
 
-        bonus = flatBonus;
-
+        statBonus = flatBonus;
+        itemBonus = equipmentBonus;
         SetDim(true);
         SetDiceRenderVisible(true);
         physicsRoller.SetStageVisible(true);
@@ -103,7 +105,7 @@ public class DiceBoxUI : MonoBehaviour
         SetDiceRenderVisible(false);
         physicsRoller.SetStageVisible(false);
 
-        ShowResolvedDice(physicsResults, flatBonus);
+        ShowResolvedDice(physicsResults,flatBonus,equipmentBonus);
 
         if (pendingDiceContainer != null)
             pendingDiceContainer.gameObject.SetActive(true);
@@ -131,7 +133,8 @@ public class DiceBoxUI : MonoBehaviour
         if (results != null)
             rolls.AddRange(results);
 
-        bonus = flatBonus;
+        statBonus = flatBonus;
+        itemBonus = 0;
 
         Refresh();
     }
@@ -162,7 +165,8 @@ public class DiceBoxUI : MonoBehaviour
     private void ClearResultsOnly()
     {
         rolls.Clear();
-        bonus = 0;
+        statBonus = 0;
+        itemBonus = 0;
         Refresh();
     }
 
@@ -211,7 +215,10 @@ public class DiceBoxUI : MonoBehaviour
             iconUI.SetValue(value);
     }
 
-    private void ShowResolvedDice(List<int> results, int flatBonus)
+    private void ShowResolvedDice(
+    List<int> results,
+    int flatBonus,
+    int equipmentBonus)
     {
         preservingResolvedRoll = true;
         ClearPendingDice();
@@ -221,7 +228,8 @@ public class DiceBoxUI : MonoBehaviour
         if (results != null)
             rolls.AddRange(results);
 
-        bonus = flatBonus;
+        statBonus = flatBonus;
+        itemBonus = equipmentBonus;
 
         foreach (int roll in rolls)
             SpawnDiceIconValue(roll);
@@ -232,32 +240,53 @@ public class DiceBoxUI : MonoBehaviour
     {
         if (rolls.Count == 0)
         {
-            if (resultsText != null) resultsText.text = "-";
-            if (totalText != null) totalText.text = "-";
+            if (resultsText != null)
+                resultsText.text = "-";
+
+            if (totalText != null)
+                totalText.text = "-";
+
             return;
         }
 
         if (resultsText != null)
-            resultsText.text = string.Join(", ", rolls);
+            resultsText.text =
+                string.Join(", ", rolls);
 
         int diceSum = 0;
 
         foreach (int roll in rolls)
             diceSum += roll;
 
-        int total = diceSum + bonus;
+        int total =
+            diceSum +
+            statBonus +
+            itemBonus;
 
         if (totalText != null)
         {
-            totalText.text = bonus != 0
-                ? $"{diceSum} + {bonus} = <b>{total}</b>"
-                : $"<b>{total}</b>";
+            string statPart =
+                statBonus != 0
+                    ? $" + {statBonus}"
+                    : "";
+
+            string itemPart =
+                itemBonus != 0
+                    ? $" + <color=#66CCFF>{itemBonus}</color>"
+                    : "";
+
+            totalText.text =
+                $"{diceSum}" +
+                $"{statPart}" +
+                $"{itemPart}" +
+                $" = <b>{total}</b>";
         }
     }
 
     private int GetTotal()
     {
-        int total = bonus;
+        int total =
+            statBonus + itemBonus;
 
         foreach (int roll in rolls)
             total += roll;

@@ -136,4 +136,54 @@ public class CharacterInventory : MonoBehaviour
                 return data.baseEffectValue + ownedItem.upgradeLevel;
         }
     }
+
+    public float GetTotalEffect(ItemEffectType effectType)
+    {
+        float total = 0f;
+
+        foreach (OwnedItem ownedItem in ownedItems)
+        {
+            ItemData data = GetItemData(ownedItem);
+
+            if (data == null)
+                continue;
+
+            if (data.effectType != effectType)
+                continue;
+
+            total += GetCurrentEffect(ownedItem);
+        }
+
+        return total;
+    }
+
+    public int GetBonusDamage()
+    {
+        return Mathf.RoundToInt(
+            GetTotalEffect(ItemEffectType.Damage));
+    }
+
+    public int GetBonusMaxHealth()
+    {
+        return Mathf.RoundToInt(
+            GetTotalEffect(ItemEffectType.MaxHealth));
+    }
+
+    public int GetBonusMaxStamina()
+    {
+        return Mathf.RoundToInt(
+            GetTotalEffect(ItemEffectType.MaxStamina));
+    }
+
+    public float GetDamageReductionPercent()
+    {
+        return GetTotalEffect(
+            ItemEffectType.DamageReduction);
+    }
+
+    public int GetAttackStaminaCostModifier()
+    {
+        return Mathf.RoundToInt(
+            GetTotalEffect(ItemEffectType.AttackStaminaCost));
+    }
 }

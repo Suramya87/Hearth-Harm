@@ -15,6 +15,8 @@ public class ActionButtonUI : MonoBehaviour
     [SerializeField] private GameObject      staminaCostRoot;
     [SerializeField] private TextMeshProUGUI staminaCostText;
 
+    private CharacterInventory cachedInventory;
+
     [Header("Affordability")]
     [Range(0f, 1f)]
     [SerializeField] private float       unaffordableAlpha = 0.4f;
@@ -35,9 +37,17 @@ public class ActionButtonUI : MonoBehaviour
 
         // FIX: PlayerStats lives on the unit root, not on the action component.
         // GetComponentInParent walks up the hierarchy and finds it correctly.
-        cachedStats = a.GetComponentInParent<PlayerStats>();
+        cachedStats =
+    a.GetComponentInParent<PlayerStats>();
 
-        if (actionNameText) actionNameText.text = a.GetActionName().ToUpper();
+        if (cachedInventory != null)
+            cachedInventory.OnInventoryChanged -= HandleInventoryChanged;
+
+        cachedInventory =
+            a.GetComponentInParent<CharacterInventory>();
+
+        if (cachedInventory != null)
+            cachedInventory.OnInventoryChanged += HandleInventoryChanged;
 
         button.onClick.RemoveAllListeners();
         button.onClick.AddListener(() => UnitActionSystem.Instance?.SetSelectedAction(action));
@@ -45,6 +55,13 @@ public class ActionButtonUI : MonoBehaviour
         RefreshIcon();
         RefreshDesc();
         RefreshStamina();
+        RefreshAffordability();
+    }
+
+    private void HandleInventoryChanged()
+    {
+        RefreshStamina();
+        RefreshDesc();
         RefreshAffordability();
     }
 
@@ -80,19 +97,32 @@ public class ActionButtonUI : MonoBehaviour
 
     private void RefreshStamina()
     {
-        if (staminaCostRoot == null) return;
+        if (staminaCostRoot == null)
+            return;
+
         if (action is CombatAction ca && ca.ActionData != null)
         {
-            int cost = ca.ActionData.staminaCost;
-            staminaCostRoot.SetActive(cost > 0);
-            if (staminaCostText) staminaCostText.text = cost.ToString();
+            int baseCost = ca.ActionData.staminaCost;
+            int effectiveCost = ca.GetEffectiveStaminaCost();
+
+            staminaCostRoot.SetActive(effectiveCost > 0);
+
+            if (staminaCostText != null)
+            {
+                staminaCostText.text = effectiveCost.ToString();
+            }
         }
         else if (action is MoveAction)
         {
             staminaCostRoot.SetActive(true);
-            if (staminaCostText) staminaCostText.text = "1";
+
+            if (staminaCostText != null)
+                staminaCostText.text = "1";
         }
-        else staminaCostRoot.SetActive(false);
+        else
+        {
+            staminaCostRoot.SetActive(false);
+        }
     }
 
     private void RefreshAffordability()
@@ -114,8 +144,14 @@ public class ActionButtonUI : MonoBehaviour
             return cachedStats.currentStamina >= 1;
 
         if (action is CombatAction ca && ca.ActionData != null)
-            return cachedStats.currentStamina >= ca.ActionData.staminaCost;
+            return cachedStats.currentStamina >= ca.GetEffectiveStaminaCost();
 
         return true;
+    }
+
+    private void OnDestroy()
+    {
+        if (cachedInventory != null)
+            cachedInventory.OnInventoryChanged -= HandleInventoryChanged;
     }
 }
