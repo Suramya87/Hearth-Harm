@@ -19724,9 +19724,7 @@ MonoBehaviour:
   - {fileID: 1968470908}
   - {fileID: 1767530207}
   charSelectPlayerList: {fileID: 1489930132}
-  characterButtons:
-  - {fileID: 631827815}
-  - {fileID: 1791753463}
+  characterButtons: []
   characterNames:
   - SmokeStack
   - Sconstance

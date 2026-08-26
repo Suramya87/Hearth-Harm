@@ -8,7 +8,6 @@ using Unity.Netcode;
 
 public class MainMenuController : MonoBehaviour
 {
-    // ── Panels ────────────────────────────────────────────────────────────
     [Header("Panels")]
     [SerializeField] private GameObject mainMenuPanel;
     [SerializeField] private GameObject modePanel;
@@ -19,7 +18,6 @@ public class MainMenuController : MonoBehaviour
     [SerializeField] private GameObject creditsPanel;
     [SerializeField] private GameObject settingsPanel;
 
-    // ── Main menu buttons ─────────────────────────────────────────────────
     [Header("Main Menu Buttons")]
     [SerializeField] private Button newGameButton;
     [SerializeField] private Button multiplayerButton;
@@ -27,7 +25,6 @@ public class MainMenuController : MonoBehaviour
     [SerializeField] private Button creditsBackButton;
     [SerializeField] private Button optionsButton;
 
-    // ── Mode panel ────────────────────────────────────────────────────────
     [Header("Mode Panel Buttons")]
     [SerializeField] private Button partyModeButton;
 
@@ -35,7 +32,6 @@ public class MainMenuController : MonoBehaviour
     [SerializeField] private Button startSinglePlayerButton;
     [SerializeField] private Button backToMainButton;
 
-    // ── Multiplayer panel ─────────────────────────────────────────────────
     [Header("Multiplayer Panel")]
     [SerializeField] private Button hostButton;
     [SerializeField] private Button joinButton;
@@ -44,11 +40,9 @@ public class MainMenuController : MonoBehaviour
     [SerializeField] private TextMeshProUGUI multiplayerErrorText;
     [SerializeField] private Button backToModeButton;
 
-    // ── Player name ───────────────────────────────────────────────────────
     [Header("Player Name")]
     [SerializeField] private TMP_InputField playerNameInput;
 
-    // ── Waiting lobby panel ───────────────────────────────────────────────
     [Header("Waiting Lobby Panel")]
     [SerializeField] private TextMeshProUGUI sessionCodeText;
     [SerializeField] private Button copyCodeButton;
@@ -58,21 +52,19 @@ public class MainMenuController : MonoBehaviour
     [SerializeField] private Button beginCharSelectButton;
     [SerializeField] private Button waitingLeaveButton;
 
-    // ── Character select panel (Party Mode) ───────────────────────────────
     [Header("Party Mode Char Select")]
-    [SerializeField] private GameObject partyModeCharSelectPanel;   // drag your editor-built panel here
-    [SerializeField] private List<Image> partyModeCharButtonImages;  // Image components on each character button
+    [SerializeField] private GameObject partyModeCharSelectPanel;
+    [SerializeField] private List<Image> partyModeCharButtonImages;
 
-    // Runtime copies of materials for fade animation — set up in Start()
-    private List<Material> _partyModeFadeMaterials = new();
-
-    // ── Single-player character select (legacy, unchanged) ────────────────
     [Header("Character Select Panel")]
     [SerializeField] private Transform charSelectPlayerList;
     [SerializeField] private List<Button> characterButtons;
     [SerializeField] private List<string> characterNames;
     [SerializeField] private List<Image> characterImages;
     [SerializeField] private List<GameObject> characterPrefabs;
+
+    /// <summary>Character prefabs exposed for external portrait extraction.</summary>
+    public IReadOnlyList<GameObject> CharacterPrefabs => characterPrefabs;
     [SerializeField] private TextMeshProUGUI selectedCharacterName;
     [SerializeField] private Button readyButton;
     [SerializeField] private Button startButton;
@@ -80,20 +72,19 @@ public class MainMenuController : MonoBehaviour
     [SerializeField] private Button partyModeStartButton;
     [SerializeField] private Button charSelectLeaveButton;
 
-    // ── Party Slots (single-player) ───────────────────────────────────────
     [Header("Party Slots")]
     [SerializeField] private Transform[] charSelectSlotContainers;
     [SerializeField] private TextMeshProUGUI slotCountText;
 
-    // ── Scenes ────────────────────────────────────────────────────────────
     [Header("Scenes")]
     [SerializeField] private string singlePlayerSceneName = "SinglePlayerScene";
     [SerializeField] private string multiplayerSceneName  = "MultiplayerScene";
     [SerializeField] private string PartyModeSceneName = "PartyModeScene";
 
-
-    // ── Runtime state ─────────────────────────────────────────────────────
     private int selectedCharIndex = 0;
+
+    public int GetSelectedCharIndex() => selectedCharIndex;
+
     private bool isReady = false;
     private bool inCharSelectPhase = false;
     private bool isSinglePlayer = false;
@@ -104,16 +95,12 @@ public class MainMenuController : MonoBehaviour
     private bool _isStartingGame = false;
     private bool _charSelectInitialized = false;
 
-    // Party slots: tracks which character indices are active as party members.
-    // Each entry = one player slot, max 4 total.
-    // This is updated when you click your editor-built character buttons (see OnPartyMemberToggle).
-    private readonly List<int> activePartySlots = new();
+    public static MainMenuController Instance { get; private set; }
 
+    private readonly List<int> activePartySlots = new();
     public int ActivePartySlotCount => activePartySlots.Count;
 
-    // ─────────────────────────────────────────────────────────────────────
-    // Awake — wire up all button listeners
-    // ─────────────────────────────────────────────────────────────────────
+    private List<Material> _partyModeFadeMaterials = new();
 
     private void Awake()
     {
@@ -129,6 +116,13 @@ public class MainMenuController : MonoBehaviour
         if (partyModeButton != null)
             partyModeButton.onClick.AddListener(OnPartyModeClicked);
 
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+        Instance = this;
+
         startSinglePlayerButton?.onClick.AddListener(GoToSinglePlayerCharSelect);
         backToMainButton?.onClick.AddListener(() => ShowPanel(mainMenuPanel));
         backToModeButton?.onClick.AddListener(OnBackToModeClicked);
@@ -137,9 +131,7 @@ public class MainMenuController : MonoBehaviour
         joinButton?.onClick.AddListener(OnJoinClicked);
 
         playerNameInput?.onEndEdit.AddListener(OnPlayerNameChanged);
-
         copyCodeButton?.onClick.AddListener(OnCopyCodeClicked);
-
         beginCharSelectButton?.onClick.AddListener(OnBeginCharSelectClicked);
         waitingLeaveButton?.onClick.AddListener(OnLeaveClicked);
 
@@ -162,10 +154,6 @@ public class MainMenuController : MonoBehaviour
         UnsubscribeFromLobbySync();
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    // Start — initial panel state
-    // ─────────────────────────────────────────────────────────────────────
-
     private void Start()
     {
         NetworkGameManager.ReinitializeForNewGame();
@@ -179,28 +167,21 @@ public class MainMenuController : MonoBehaviour
         multiplayerPanel?.SetActive(false);
 
         beginCharSelectButton?.gameObject.SetActive(false);
-
         SetSessionCode("---");
         SetUgsStatus("Signing in…");
         SetMultiplayerError(string.Empty);
         SetMultiplayerButtonsInteractable(false);
 
         SetUpPartyModeFadeMaterials();
-
         ShowPanel(mainMenuPanel);
 
         StartCoroutine(LoadPlayerName());
         StartCoroutine(SubscribeWhenReady());
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    // Coroutines
-    // ─────────────────────────────────────────────────────────────────────
-
     private IEnumerator LoadPlayerName()
     {
-        while (NetworkGameManager.Instance == null ||
-               string.IsNullOrEmpty(NetworkGameManager.Instance.LocalPlayerId))
+        while (NetworkGameManager.Instance == null || string.IsNullOrEmpty(NetworkGameManager.Instance.LocalPlayerId))
             yield return null;
 
         string key = $"PlayerName_{NetworkGameManager.Instance.LocalPlayerId}";
@@ -223,7 +204,6 @@ public class MainMenuController : MonoBehaviour
     private IEnumerator SubscribeToLobbySyncWhenReady()
     {
         lobbySyncCoroutineActive = true;
-        Debug.Log("[MainMenuController] Waiting for LobbySync…");
 
         float elapsed = 0f;
         while (LobbySync.Instance == null)
@@ -239,17 +219,13 @@ public class MainMenuController : MonoBehaviour
             yield return null;
         }
 
-        Debug.Log("[MainMenuController] LobbySync ready — subscribing.");
         UnsubscribeFromLobbySync();
         SubscribeToLobbySync();
 
         bool isHost = NetworkGameManager.Instance?.IsHost ?? false;
 
-        if (waitingLobbyPanel != null && !waitingLobbyPanel.activeSelf &&
-            (characterSelectPanel == null || !characterSelectPanel.activeSelf))
-        {
+        if (waitingLobbyPanel != null && !waitingLobbyPanel.activeSelf && (characterSelectPanel == null || !characterSelectPanel.activeSelf))
             EnterWaitingLobby(isHost);
-        }
 
         if (beginCharSelectButton != null)
         {
@@ -261,7 +237,6 @@ public class MainMenuController : MonoBehaviour
 
         if (!inCharSelectPhase && LobbySync.Instance.IsCharSelectPhaseActive)
         {
-            Debug.Log("[MainMenuController] Char select already active — catching up immediately.");
             SwitchToCharSelectPhase();
         }
         else if (!inCharSelectPhase)
@@ -272,7 +247,6 @@ public class MainMenuController : MonoBehaviour
                 pollElapsed += Time.deltaTime;
                 if (LobbySync.Instance != null && LobbySync.Instance.IsCharSelectPhaseActive)
                 {
-                    Debug.Log("[MainMenuController] Char select detected during poll — catching up.");
                     SwitchToCharSelectPhase();
                     break;
                 }
@@ -286,22 +260,9 @@ public class MainMenuController : MonoBehaviour
 
     private void Update()
     {
-        if (!lobbySyncCoroutineActive &&
-            !alreadySubscribedToLobbySync &&
-            !inCharSelectPhase &&
-            LobbySync.Instance != null &&
-            NetworkManager.Singleton != null &&
-            NetworkManager.Singleton.IsConnectedClient &&
-            !NetworkManager.Singleton.IsHost)
-        {
-            Debug.Log("[MainMenuController] Fallback: Widget-client detected LobbySync — subscribing.");
+        if (!lobbySyncCoroutineActive && !alreadySubscribedToLobbySync && !inCharSelectPhase && LobbySync.Instance != null && NetworkManager.Singleton != null && NetworkManager.Singleton.IsConnectedClient && !NetworkManager.Singleton.IsHost)
             StartCoroutine(SubscribeToLobbySyncWhenReady());
-        }
     }
-
-    // ─────────────────────────────────────────────────────────────────────
-    // Event subscriptions
-    // ─────────────────────────────────────────────────────────────────────
 
     private void SubscribeToNetworkGameManager()
     {
@@ -335,7 +296,6 @@ public class MainMenuController : MonoBehaviour
         LobbySync.Instance.OnCharSelectPhaseStarted += SwitchToCharSelectPhase;
         LobbySync.Instance.OnPlayerDataUpdated += HandlePlayerDataUpdated;
         alreadySubscribedToLobbySync = true;
-        Debug.Log("[MainMenuController] Subscribed to LobbySync.");
     }
 
     private void UnsubscribeFromLobbySync()
@@ -345,31 +305,12 @@ public class MainMenuController : MonoBehaviour
         LobbySync.Instance.OnPlayerDataUpdated -= HandlePlayerDataUpdated;
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    // UGS callbacks
-    // ─────────────────────────────────────────────────────────────────────
+    private void OnUgsSignedIn() { SetUgsStatus(string.Empty); SetMultiplayerButtonsInteractable(true); }
 
-    private void OnUgsSignedIn()
-    {
-        SetUgsStatus(string.Empty);
-        SetMultiplayerButtonsInteractable(true);
-    }
+    private void OnUgsSignInFailed(string error) { SetUgsStatus("Sign-in failed. Check connection."); SetMultiplayerButtonsInteractable(false); }
 
-    private void OnUgsSignInFailed(string error)
-    {
-        SetUgsStatus("Sign-in failed. Check connection.");
-        SetMultiplayerButtonsInteractable(false);
-    }
-
-    // ─────────────────────────────────────────────────────────────────────
-    // Panel navigation
-    // ─────────────────────────────────────────────────────────────────────
-
-    /// <summary>"Play Party Mode" — shows your inspector-assigned panel.</summary>
     private void OnPartyModeClicked()
     {
-        Debug.Log("[MainMenuController] >>> Play Party Mode clicked!");
-        Debug.Log($"[DEBUG] activePartySlots addr={System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(activePartySlots)}");
         isSinglePlayer = false;
         inCharSelectPhase = true;
         isReady = false;
@@ -379,18 +320,10 @@ public class MainMenuController : MonoBehaviour
             activePartySlots.Clear();
             CharacterSelection.ClearSlots();
             _charSelectInitialized = true;
-            Debug.Log($"[DEBUG] Cleared slots on first entry");
-        }
-        else
-        {
-            Debug.Log($"[DEBUG] NOT clearing — already initialized. Slots before show: [{string.Join(", ", activePartySlots)}]");
         }
 
         modePanel?.SetActive(false);
-
-        // Always show the inspector panel (no dynamic UI fallback)
-        if (partyModeCharSelectPanel != null)
-            partyModeCharSelectPanel.SetActive(true);
+        if (partyModeCharSelectPanel != null) partyModeCharSelectPanel.SetActive(true);
     }
 
     private void ShowPanel(GameObject target)
@@ -429,10 +362,6 @@ public class MainMenuController : MonoBehaviour
         ShowPanel(modePanel);
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    // Host / Join
-    // ─────────────────────────────────────────────────────────────────────
-
     private void OnHostClicked()
     {
         if (isConnecting) return;
@@ -463,7 +392,6 @@ public class MainMenuController : MonoBehaviour
     {
         if (currentJoinCode == "---" || string.IsNullOrEmpty(currentJoinCode)) return;
         GUIUtility.systemCopyBuffer = currentJoinCode;
-
         var txt = copyCodeButton?.GetComponentInChildren<TextMeshProUGUI>();
         if (txt != null) StartCoroutine(FlashCopyConfirmation(txt));
     }
@@ -476,42 +404,29 @@ public class MainMenuController : MonoBehaviour
         label.text = original;
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    // Session callbacks
-    // ─────────────────────────────────────────────────────────────────────
-
     private void HandleSessionCreated()
     {
         isConnecting = false;
         GameManager.SetMode(GameMode.Host);
-
         currentJoinCode = NetworkGameManager.Instance?.GetJoinCode() ?? "---";
         SetSessionCode(currentJoinCode);
-
         EnterWaitingLobby(isHost: true);
-
-        if (!lobbySyncCoroutineActive)
-            StartCoroutine(SubscribeToLobbySyncWhenReady());
+        if (!lobbySyncCoroutineActive) StartCoroutine(SubscribeToLobbySyncWhenReady());
     }
 
     private void HandleSessionJoined()
     {
         isConnecting = false;
         GameManager.SetMode(GameMode.Client);
-
         currentJoinCode = "---";
         SetSessionCode("---");
-
         EnterWaitingLobby(isHost: false);
-
-        if (!lobbySyncCoroutineActive)
-            StartCoroutine(SubscribeToLobbySyncWhenReady());
+        if (!lobbySyncCoroutineActive) StartCoroutine(SubscribeToLobbySyncWhenReady());
     }
 
     private void HandleSessionLeft()
     {
         activePartySlots.Clear();
-
         isConnecting = false;
         inCharSelectPhase = false;
         isReady = false;
@@ -521,14 +436,10 @@ public class MainMenuController : MonoBehaviour
         lobbySyncCoroutineActive = false;
         alreadySubscribedToLobbySync = false;
         currentJoinCode = "---";
-
         GameManager.SetMode(GameMode.Offline);
-
         UnsubscribeFromLobbySync();
-
         beginCharSelectButton?.gameObject.SetActive(false);
         if (copyCodeButton != null) copyCodeButton.gameObject.SetActive(false);
-
         SetSessionCode("---");
         SetMultiplayerError(string.Empty);
         SetMultiplayerButtonsInteractable(true);
@@ -548,39 +459,26 @@ public class MainMenuController : MonoBehaviour
         PopulateWaitingLobbySlots(players);
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    // Waiting lobby
-    // ─────────────────────────────────────────────────────────────────────
-
     private void EnterWaitingLobby(bool isHost)
     {
         inCharSelectPhase = false;
         isReady = false;
-
         beginCharSelectButton?.gameObject.SetActive(isHost);
-        if (beginCharSelectButton != null)
-            beginCharSelectButton.interactable = false;
-
-        if (copyCodeButton != null)
-            copyCodeButton.gameObject.SetActive(isHost);
-
+        if (beginCharSelectButton != null) beginCharSelectButton.interactable = false;
+        if (copyCodeButton != null) copyCodeButton.gameObject.SetActive(isHost);
         var players = NetworkGameManager.Instance?.GetPlayerList();
         if (players != null) PopulateWaitingLobbySlots(players);
-
         ShowPanel(waitingLobbyPanel);
     }
 
     private void PopulateWaitingLobbySlots(List<SessionPlayerInfo> players)
     {
         if (waitingPlayerList == null || playerSlotPrefab == null) return;
-
         foreach (Transform child in waitingPlayerList) Destroy(child.gameObject);
 
         foreach (var info in players)
         {
-            string charName = (info.CharacterIndex >= 0 && info.CharacterIndex < characterNames.Count)
-                ? characterNames[info.CharacterIndex] : "Not selected";
-
+            string charName = (info.CharacterIndex >= 0 && info.CharacterIndex < characterNames.Count) ? characterNames[info.CharacterIndex] : "Not selected";
             var go = Instantiate(playerSlotPrefab, waitingPlayerList);
             go.GetComponent<PlayerSlotUI>()?.Setup(info, charName);
         }
@@ -596,19 +494,9 @@ public class MainMenuController : MonoBehaviour
     {
         bool isHost = NetworkGameManager.Instance?.IsHost ?? false;
         if (!isHost) return;
-
-        if (LobbySync.Instance == null)
-        {
-            Debug.LogWarning("[MainMenuController] LobbySync not ready yet.");
-            return;
-        }
-
+        if (LobbySync.Instance == null) return;
         LobbySync.Instance.BeginCharSelectPhase();
     }
-
-    // ─────────────────────────────────────────────────────────────────────
-    // LobbySync callbacks
-    // ─────────────────────────────────────────────────────────────────────
 
     private void HandlePlayerDataUpdated(ulong[] clientIds)
     {
@@ -623,8 +511,7 @@ public class MainMenuController : MonoBehaviour
             bool ready = LobbySync.Instance.IsReady(id);
             bool isLocal = id == LobbySync.Instance.LocalClientId;
             bool isHost = id == 0;
-            string charName = (charIdx >= 0 && charIdx < characterNames.Count)
-                ? characterNames[charIdx] : "Selecting…";
+            string charName = (charIdx >= 0 && charIdx < characterNames.Count) ? characterNames[charIdx] : "Selecting…";
 
             var info = new SessionPlayerInfo($"{id}", $"Player {id}", charIdx, ready, isLocal, isHost);
             var go = Instantiate(playerSlotPrefab, list);
@@ -637,14 +524,9 @@ public class MainMenuController : MonoBehaviour
         RefreshStartButton();
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    // Character select (single-player only, unchanged)
-    // ─────────────────────────────────────────────────────────────────────
-
     private void SwitchToCharSelectPhase()
     {
         if (inCharSelectPhase) return;
-
         inCharSelectPhase = true;
         isReady = false;
         selectedCharIndex = 0;
@@ -656,11 +538,9 @@ public class MainMenuController : MonoBehaviour
             _charSelectInitialized = true;
         }
         UpdateSlotCountText();
-
         CharacterSelection.SetCharacterPrefabs(characterPrefabs);
 
         bool isHost = !isSinglePlayer && (NetworkGameManager.Instance?.IsHost ?? false);
-
         singlePlayerStartButton?.gameObject.SetActive(isSinglePlayer && inCharSelectPhase);
         readyButton?.gameObject.SetActive(!isSinglePlayer);
 
@@ -671,14 +551,9 @@ public class MainMenuController : MonoBehaviour
         }
 
         modePanel?.SetActive(false);
-
-        if (isSinglePlayer && characterSelectPanel != null)
-            characterSelectPanel.SetActive(true);
-
-        Debug.Log($"[MainMenuController] → Char select. SP={isSinglePlayer} Host={isHost} activePartySlots={activePartySlots.Count}");
+        if (isSinglePlayer && characterSelectPanel != null) characterSelectPanel.SetActive(true);
     }
 
-    /// <summary>Check whether a character index is currently in the party.</summary>
     public bool IsActivePartyMember(int charIndex)
     {
         for (int i = 0; i < activePartySlots.Count; i++)
@@ -686,56 +561,30 @@ public class MainMenuController : MonoBehaviour
         return false;
     }
 
-    /// <summary>Toggle a character on/off in the party. Call from inspector — parameter is the character index (0-3+).</summary>
     public void OnPartyMemberToggle(int charIndex)
     {
-        int before = activePartySlots.Count;
-        Debug.Log($"[DEBUG] OnPartyMemberToggle({charIndex}) BEFORE: count={before} slots=[{string.Join(", ", activePartySlots)}]");
-
-        // Find existing slot
         int existingSlot = -1;
         for (int i = activePartySlots.Count - 1; i >= 0; i--)
         {
-            if (activePartySlots[i] == charIndex)
-            {
-                existingSlot = i;
-                break;
-            }
+            if (activePartySlots[i] == charIndex) { existingSlot = i; break; }
         }
 
         if (existingSlot >= 0)
         {
-            // Remove character from party
             activePartySlots.RemoveAt(existingSlot);
-
-            // Shift remaining selections down
             for (int k = existingSlot; k + 1 < activePartySlots.Count; k++)
                 activePartySlots[k] = activePartySlots[k + 1];
-
             selectedCharIndex = activePartySlots.Count > 0 ? activePartySlots[activePartySlots.Count - 1] : charIndex;
         }
         else
         {
-            // Add character to party (max 4)
-            if (activePartySlots.Count >= CharacterSelection.MaxSlots)
-            {
-                Debug.LogWarning($"[DEBUG] Cannot add character {charIndex}: already at max ({CharacterSelection.MaxSlots})");
-                return;
-            }
+            if (activePartySlots.Count >= CharacterSelection.MaxSlots) return;
             activePartySlots.Add(charIndex);
             selectedCharIndex = charIndex;
         }
 
-        int after = activePartySlots.Count;
-        Debug.Log($"[DEBUG] OnPartyMemberToggle({charIndex}) AFTER: count={after} slots=[{string.Join(", ", activePartySlots)}]");
-        Debug.Log($"[DEBUG] RefreshActiveSlotUI will run next...");
-
         RefreshActiveSlotUI();
     }
-
-    // ─────────────────────────────────────────────────────────────────────
-    // Ready & Start
-    // ─────────────────────────────────────────────────────────────────────
 
     private void OnReadyClicked()
     {
@@ -749,7 +598,6 @@ public class MainMenuController : MonoBehaviour
     {
         var txt = readyButton?.GetComponentInChildren<TextMeshProUGUI>();
         if (txt != null) txt.text = isReady ? "Not Ready" : "Ready!";
-
         var img = readyButton?.GetComponent<Image>();
         if (img != null) img.color = isReady ? new Color(0.2f, 0.85f, 0.3f, 1f) : Color.white;
     }
@@ -757,14 +605,10 @@ public class MainMenuController : MonoBehaviour
     private void RefreshStartButton()
     {
         if (startButton == null || isSinglePlayer) return;
-
         bool isHost = NetworkGameManager.Instance?.IsHost ?? false;
         if (!isHost) return;
 
-        bool allReady = LobbySync.Instance?.AllPlayersReady()
-                     ?? NetworkGameManager.Instance?.AllPlayersReady()
-                     ?? false;
-
+        bool allReady = LobbySync.Instance?.AllPlayersReady() ?? NetworkGameManager.Instance?.AllPlayersReady() ?? false;
         startButton.interactable = allReady;
 
         var txt = startButton.GetComponentInChildren<TextMeshProUGUI>();
@@ -774,21 +618,12 @@ public class MainMenuController : MonoBehaviour
             txt.color = allReady ? Color.white : new Color(1f, 1f, 1f, 0.4f);
         }
     }
-    // ─────────────────────────────────────────────────────────────────────
-    // Party Mode — editor-panel UI refresh (lightweight)
-    // Updates count text and start button visibility on your inspector panel
-    // ─────────────────────────────────────────────────────────────────────
 
-    /// <summary>Refresh button highlight colors on the party-mode inspector panel.</summary>
     private void RefreshActiveSlotUI()
     {
-        Debug.Log($"[MainMenuController] activePartySlots changed: [{string.Join(", ", activePartySlots)}] ({activePartySlots.Count}/{CharacterSelection.MaxSlots})");
-
-        // Update button visuals via fade materials (0 = faded/colorless, 1 = full color)
         for (int i = 0; i < partyModeCharButtonImages.Count; i++)
         {
             if (_partyModeFadeMaterials == null || _partyModeFadeMaterials.Count <= i) continue;
-
             Image img = partyModeCharButtonImages[i];
             if (img == null || _partyModeFadeMaterials[i] == null) continue;
 
@@ -800,7 +635,6 @@ public class MainMenuController : MonoBehaviour
     private IEnumerator AnimateVFXFade(Image img, Material mat, float target)
     {
         if (img == null || mat == null) yield break;
-
         float startVal = mat.GetFloat("_Amount");
         float t = 0f;
         float duration = 0.35f;
@@ -816,8 +650,8 @@ public class MainMenuController : MonoBehaviour
     private void SetUpPartyModeFadeMaterials()
     {
         if (partyModeCharButtonImages == null || partyModeCharButtonImages.Count == 0) return;
-
         _partyModeFadeMaterials.Clear();
+
         for (int i = 0; i < partyModeCharButtonImages.Count; i++)
         {
             Image img = partyModeCharButtonImages[i];
@@ -828,38 +662,13 @@ public class MainMenuController : MonoBehaviour
             img.material = runtimeMat;
             _partyModeFadeMaterials.Add(runtimeMat);
         }
-
-        Debug.Log($"[MainMenuController] Set up {_partyModeFadeMaterials.Count} fade VFX materials for party mode buttons.");
     }
-
-    // ─────────────────────────────────────────────────────────────────────
-    // Start party mode game — validates and launches
-    // Call from inspector on your panel's "Start Game" button.
-    // ─────────────────────────────────────────────────────────────────────
 
     public void OnPartymodeStartClicked()
     {
         if (_isStartingGame) return;
 
-        Debug.Log($"[DEBUG] OnPartymodeStartClicked BEFORE check: activePartySlots addr={System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(activePartySlots)} count={activePartySlots.Count} capacity={activePartySlots.Capacity}");
-        for (int i = 0; i < activePartySlots.Count; i++)
-            Debug.Log($"[DEBUG]   slot[{i}] = {activePartySlots[i]}");
-
-        if (activePartySlots.Count == 0)
-        {
-            // Try to figure out what cleared it — check if partyModeCharButtonImages got corrupted
-            bool anyImagesNull = false;
-            for (int i = 0; i < partyModeCharButtonImages.Count; i++)
-            {
-                if (partyModeCharButtonImages[i] == null) anyImagesNull = true;
-            }
-            Debug.LogWarning($"[MainMenuController] No characters selected for party mode! activePartySlots addr={System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(activePartySlots)}");
-            Debug.LogWarning($"[DEBUG] partyModeCharButtonImages count={partyModeCharButtonImages.Count}, nulls={anyImagesNull}");
-
-            // Check if the list object itself was replaced (common when Unity serializes a List)
-            Debug.LogError("[MainMenuController] === activePartySlots might have been replaced by Unity serialization! Check for duplicate MainMenuController components in scene. ===");
-            return;
-        }
+        if (activePartySlots.Count == 0) return;
 
         CharacterSelection.SetCharacterPrefabs(characterPrefabs);
         CharacterSelection.SetSlots(activePartySlots);
@@ -867,15 +676,10 @@ public class MainMenuController : MonoBehaviour
         bool valid = false;
         for (int i = 0; i < CharacterSelection.SlotCount && !valid; i++)
         {
-            if (CharacterSelection.GetPrefabForSlot(i) != null)
-                valid = true;
+            if (CharacterSelection.GetPrefabForSlot(i) != null) valid = true;
         }
 
-        if (!valid)
-        {
-            Debug.LogError("[MainMenuController] No valid prefabs for party mode! characterPrefabs.Count=" + characterPrefabs?.Count);
-            return;
-        }
+        if (!valid) return;
 
         if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
             NetworkManager.Singleton.Shutdown();
@@ -888,26 +692,14 @@ public class MainMenuController : MonoBehaviour
         modePanel?.SetActive(false);
         loadingPanel?.SetActive(true);
         ShowPanel(null);
-        Debug.Log("[MainMenuController] Loading " + PartyModeSceneName + " with " + activePartySlots.Count + " party members");
         SceneManager.LoadScene(PartyModeSceneName);
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    // Leave
-    // ─────────────────────────────────────────────────────────────────────
-
     private void OnBackFromCharSelect()
     {
-        // Hide inspector party panel if shown
-        if (partyModeCharSelectPanel != null)
-            partyModeCharSelectPanel.SetActive(false);
-
-        // Show mode panel
+        if (partyModeCharSelectPanel != null) partyModeCharSelectPanel.SetActive(false);
         modePanel?.SetActive(true);
-
         _charSelectInitialized = false;
-
-        Debug.Log("[MainMenuController] Back from char select. Mode panel restored.");
     }
 
     private void OnLeaveClicked()
@@ -933,10 +725,6 @@ public class MainMenuController : MonoBehaviour
         }
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    // Helpers (unchanged)
-    // ─────────────────────────────────────────────────────────────────────
-
     private void OnPlayerNameChanged(string name)
     {
         if (string.IsNullOrWhiteSpace(name)) return;
@@ -956,27 +744,19 @@ public class MainMenuController : MonoBehaviour
         if (joinButton != null) joinButton.interactable = interactable;
     }
 
-    private void SetMultiplayerError(string msg)
-    {
-        if (multiplayerErrorText != null) multiplayerErrorText.text = msg;
-    }
+    private void SetMultiplayerError(string msg) { if (multiplayerErrorText != null) multiplayerErrorText.text = msg; }
 
     private void SetSessionCode(string code)
     {
         currentJoinCode = code;
-        if (sessionCodeText != null)
-            sessionCodeText.text = code == "---" ? "Waiting…" : $"{code}";
+        if (sessionCodeText != null) sessionCodeText.text = code == "---" ? "Waiting…" : $"{code}";
     }
 
-    private void SetUgsStatus(string msg)
-    {
-        if (ugsStatusText != null) ugsStatusText.text = msg;
-    }
+    private void SetUgsStatus(string msg) { if (ugsStatusText != null) ugsStatusText.text = msg; }
 
     private void UpdateSlotCountText()
     {
-        if (slotCountText != null)
-            slotCountText.text = $"{activePartySlots.Count} / {CharacterSelection.MaxSlots}";
+        if (slotCountText != null) slotCountText.text = $"{activePartySlots.Count} / {CharacterSelection.MaxSlots}";
     }
 
     private void OnSinglePlayerStartClicked()
@@ -991,12 +771,8 @@ public class MainMenuController : MonoBehaviour
     {
         bool isHost = NetworkGameManager.Instance?.IsHost ?? false;
         if (!isHost) return;
-
-        bool allReady = LobbySync.Instance?.AllPlayersReady()
-                     ?? NetworkGameManager.Instance?.AllPlayersReady()
-                     ?? false;
+        bool allReady = LobbySync.Instance?.AllPlayersReady() ?? NetworkGameManager.Instance?.AllPlayersReady() ?? false;
         if (!allReady) return;
-
         LaunchGame(isMultiplayer: true);
     }
 
@@ -1006,8 +782,7 @@ public class MainMenuController : MonoBehaviour
         CharacterSelection.Prefab = GetSelectedPrefab();
 
         if (isMultiplayer)
-            GameManager.SetMode(NetworkManager.Singleton?.IsHost ?? false
-                ? GameMode.Host : GameMode.Client);
+            GameManager.SetMode(NetworkManager.Singleton?.IsHost ?? false ? GameMode.Host : GameMode.Client);
         else
             GameManager.SetMode(GameMode.Offline);
 
@@ -1017,11 +792,7 @@ public class MainMenuController : MonoBehaviour
         if (isMultiplayer)
         {
             if (NetworkManager.Singleton?.IsHost ?? false)
-            {
-                NetworkManager.Singleton.SceneManager.LoadScene(
-                    multiplayerSceneName,
-                    UnityEngine.SceneManagement.LoadSceneMode.Single);
-            }
+                NetworkManager.Singleton.SceneManager.LoadScene(multiplayerSceneName, UnityEngine.SceneManagement.LoadSceneMode.Single);
         }
         else
         {
@@ -1034,11 +805,7 @@ public class MainMenuController : MonoBehaviour
         int existingSlot = -1;
         for (int i = activePartySlots.Count - 1; i >= 0; i--)
         {
-            if (activePartySlots[i] == charIndex)
-            {
-                existingSlot = i;
-                break;
-            }
+            if (activePartySlots[i] == charIndex) { existingSlot = i; break; }
         }
 
         if (existingSlot >= 0)
@@ -1046,13 +813,11 @@ public class MainMenuController : MonoBehaviour
             int removedCharIdx = activePartySlots[existingSlot];
             activePartySlots.RemoveAt(existingSlot);
             UpdateSlotCountText();
-
             if (charSelectSlotContainers != null && removedCharIdx < charSelectSlotContainers.Length)
             {
                 for (int i = charSelectSlotContainers[removedCharIdx].childCount - 1; i >= 0; i--)
                     Destroy(charSelectSlotContainers[removedCharIdx].GetChild(i).gameObject);
             }
-
             RefreshSlotThumbnails();
             selectedCharIndex = activePartySlots.Count > 0 ? activePartySlots[activePartySlots.Count - 1] : 0;
             return;
@@ -1064,10 +829,8 @@ public class MainMenuController : MonoBehaviour
         {
             int oldRemovedIdx = activePartySlots[activePartySlots.Count - 1];
             activePartySlots.RemoveAt(activePartySlots.Count - 1);
-
             if (charSelectSlotContainers != null && oldRemovedIdx < charSelectSlotContainers.Length)
                 DestroyAllChildren(charSelectSlotContainers[oldRemovedIdx]);
-
             RefreshSlotThumbnails();
         }
 
@@ -1075,9 +838,7 @@ public class MainMenuController : MonoBehaviour
         UpdateSlotCountText();
 
         if (charSelectSlotContainers != null && charIndex < charSelectSlotContainers.Length)
-        {
             StartCoroutine(CreateCharacterThumbnail(charSelectSlotContainers[charIndex], charIndex, activePartySlots.Count - 1));
-        }
 
         RefreshSlotThumbnails();
     }
@@ -1092,7 +853,6 @@ public class MainMenuController : MonoBehaviour
     private void RefreshSlotThumbnails()
     {
         if (charSelectSlotContainers == null) return;
-
         for (int i = 0; i < charSelectSlotContainers.Length; i++)
             DestroyAllChildren(charSelectSlotContainers[i]);
 
@@ -1117,8 +877,7 @@ public class MainMenuController : MonoBehaviour
         if (prefab != null)
         {
             var sprites = prefab.GetComponentsInChildren<SpriteRenderer>();
-            if (sprites.Length > 0 && sprites[0].sprite != null)
-                sprite = sprites[0].sprite;
+            if (sprites.Length > 0 && sprites[0].sprite != null) sprite = sprites[0].sprite;
             if (sprite == null)
             {
                 var images = prefab.GetComponentsInChildren<Image>();
@@ -1130,8 +889,7 @@ public class MainMenuController : MonoBehaviour
         }
 
         img.color = PartySlotUI.SlotColors[playerIndex];
-        if (sprite != null) img.sprite = sprite;
-        else img.raycastTarget = true;
+        if (sprite != null) img.sprite = sprite; else img.raycastTarget = true;
 
         RectTransform rt = go.GetComponent<RectTransform>();
         rt.sizeDelta = new Vector2(40f, 40f);

@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -67,6 +68,8 @@ public class TurnOrderTokenUI : MonoBehaviour, IPointerClickHandler, IPointerEnt
             nameText.text = displayName;
         }
 
+        if (iconImage != null) iconImage.sprite = null;
+
         RefreshVisualState();
     }
 
@@ -83,7 +86,85 @@ public class TurnOrderTokenUI : MonoBehaviour, IPointerClickHandler, IPointerEnt
                 nameText.text = "Player";
         }
 
+        // Pull the portrait from CharacterPortraitUI's portraits list using this unit's character index.
+        if (player != null)
+            LoadPortraitForCharacter(GetPortraitIndexForUnit(player));
+
         RefreshVisualState();
+    }
+
+    /// <summary>Load a portrait sprite for a given character index onto this token's iconImage.</summary>
+    private void LoadPortraitForCharacter(int index)
+    {
+        if (iconImage == null) return;
+
+        if (index >= 0 && TryGetPortraitFromAnyUI(index, out Sprite portrait))
+        {
+            iconImage.sprite = portrait;
+        }
+        else
+        {
+            // Fallback: try the Unit's own prefab art.
+            if (boundPlayer != null)
+            {
+                var sprites = boundPlayer.gameObject.GetComponentsInChildren<SpriteRenderer>();
+                if (sprites.Length > 0 && sprites[0].sprite != null) iconImage.sprite = sprites[0].sprite;
+
+                if (iconImage.sprite == null)
+                {
+                    var images = boundPlayer.gameObject.GetComponentsInChildren<Image>();
+                    foreach (var img in images)
+                    {
+                        if (img.sprite != null) { iconImage.sprite = img.sprite; break; }
+                    }
+                }
+            }
+
+            // Final fallback: blank.
+            if (iconImage.sprite == null) iconImage.sprite = null;
+        }
+    }
+
+    /// <summary>Find any CharacterPortraitUI instance that has a portraits list set, and return index-th sprite.</summary>
+    private static bool TryGetPortraitFromAnyUI(int index, out Sprite result)
+    {
+        var portraitUIs = UnityEngine.Object.FindObjectsByType<CharacterPortraitUI>(FindObjectsSortMode.None);
+        foreach (var ui in portraitUIs)
+        {
+            if (ui.Portraits != null && ui.Portraits.Count > 0 && index < ui.Portraits.Count)
+            {
+                result = ui.Portraits[index];
+                return true;
+            }
+        }
+        result = null;
+        return false;
+    }
+
+    /// <summary>Get the character index for a Unit, used to resolve portrait position in the portraits list.</summary>
+    private static int GetPortraitIndexForUnit(Unit unit)
+    {
+        if (unit == null) return -1;
+        if (PartyManager.IsValid && PartyManager.Instance.SelectedUnit == unit)
+            return unit.CharacterIndex;
+
+        // If this unit hasn't been assigned a CharacterIndex yet, try to infer from party position.
+        if (PartyManager.IsValid && PartyManager.Instance.PartyUnits != null)
+        {
+            int idx = FindIndexOfUnit(PartyManager.Instance.PartyUnits, unit);
+            if (idx >= 0 && unit.CharacterIndex == 0) // fallback: default CharacterIndex is 0
+                return idx;
+        }
+
+        return unit.CharacterIndex;
+    }
+
+    /// <summary>Find the index of a Unit in an IReadOnlyList (since it doesn't expose IndexOf).</summary>
+    private static int FindIndexOfUnit(IReadOnlyList<Unit> list, Unit target)
+    {
+        for (int i = 0; i < list.Count; i++)
+            if (list[i] == target) return i;
+        return -1;
     }
 
     public EnemyUnit GetBoundEnemy() => boundEnemy;

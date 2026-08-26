@@ -623,6 +623,13 @@ public class LevelGenerator : MonoBehaviour
 
             unit?.PlaceInRoomWhenReady(start.roomGrid, spawnPos);
 
+            // Assign the character index so portraits and class-based systems can resolve it.
+            if (useSlots)
+            {
+                unit.CharacterIndex = CharacterSelection.GetCharacterForSlot(i);
+                Debug.Log($"[LevelGenerator] Set CharacterIndex={unit.CharacterIndex} for '{player.name}' from slot {i}.");
+            }
+
             PartyManager.Instance.RegisterUnit(unit);
 
             if (i == 0)

@@ -8,6 +8,9 @@ public class Unit : MonoBehaviour
     [Header("Identity")]
     [SerializeField] private string displayName = "Player";
 
+    /// <summary>Character type index (0=knight, 1=rogue, etc.), set at spawn time.</summary>
+    public int CharacterIndex { get; internal set; } = 0;
+
     public string DisplayName => string.IsNullOrWhiteSpace(displayName)
         ? gameObject.name.Replace("(Clone)", "").Trim()
         : displayName;

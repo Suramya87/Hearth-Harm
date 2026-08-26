@@ -137,6 +137,7 @@ public class NetworkedPlayerSpawner : NetworkBehaviour
             var unit = go.GetComponent<Unit>();
             if (unit != null)
             {
+                unit.CharacterIndex = charIndex;
                 unit.IsSyncingFromNetwork = true;
                 unit.PlaceInRoom(startRoom.roomGrid, spawnPos.Value);
                 unit.IsSyncingFromNetwork = false;
