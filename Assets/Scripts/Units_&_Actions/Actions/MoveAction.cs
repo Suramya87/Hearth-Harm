@@ -28,14 +28,18 @@ public class MoveAction : BaseAction
         cacheDirty = true;
         LevelGenerator.OnLevelReady  += OnLevelReady;
         RoomManager.OnAnyRoomChanged += OnRoomChanged;
+        PartyFollowManager.OnFollowerPositionsChanged += OnFollowerPositionChanged;
     }
 
     private void OnDisable()
     {
         LevelGenerator.OnLevelReady  -= OnLevelReady;
         RoomManager.OnAnyRoomChanged -= OnRoomChanged;
+        PartyFollowManager.OnFollowerPositionsChanged -= OnFollowerPositionChanged;
         InvalidateCache();
     }
+
+    private void OnFollowerPositionChanged() => InvalidateCache();
 
     private void OnLevelReady() => InvalidateCache();
 

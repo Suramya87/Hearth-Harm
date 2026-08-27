@@ -42,6 +42,11 @@ public class PartyFollowManager : MonoBehaviour
 
     private static bool diagnosticPrinted;
 
+    /// <summary>Fired when follower grid positions change, so MoveAction can refresh its BFS cache.</summary>
+    public static event System.Action OnFollowerPositionsChanged;
+
+    private void FireFollowerPositionChanged() => OnFollowerPositionsChanged?.Invoke();
+
     private void OnEnable()
     {
         Debug.Log($"[PartyFollowManager] Enabled — GameMode={GameManager.Mode} IsMultiplayer={GameManager.IsMultiplayer}");
@@ -150,7 +155,23 @@ public class PartyFollowManager : MonoBehaviour
             follower.transform.position.z
         );
 
-        while (Vector2.Distance(follower.transform.position, target) > 1f)
+        var unitAnimator = follower.GetComponent<UnitAnimator>();
+
+        // Determine facing direction from current position to target.
+        float dx = target.x - follower.transform.position.x;
+        float dy = target.y - follower.transform.position.y;
+        Vector2Int facingDir = new Vector2Int(
+            Mathf.Abs(dx) > 0.01f ? (int)Mathf.Sign(dx) : 0,
+            Mathf.Abs(dy) > 0.01f ? (int)Mathf.Sign(dy) : 0);
+
+        // Mirror what MoveAction does for the leader: set moving + facing at start.
+        if (unitAnimator != null)
+        {
+            unitAnimator.SetMoving(true);
+            unitAnimator.SetFacing(facingDir);
+        }
+
+        while (Vector2.Distance(follower.transform.position, target) > 0.01f)
         {
             follower.transform.position = Vector3.MoveTowards(
                 follower.transform.position,
@@ -164,6 +185,13 @@ public class PartyFollowManager : MonoBehaviour
         follower.transform.position = target;
 
         SyncFollowerGridToWorld(follower, cellWorld);
+
+        // Mirror what MoveAction does for the leader: stop moving + keep facing at end.
+        if (unitAnimator != null)
+        {
+            unitAnimator.SetMoving(false);
+            unitAnimator.SetFacing(facingDir);
+        }
     }
 
     private void SyncFollowerGridToWorld(Unit follower, Vector3 cellWorld)

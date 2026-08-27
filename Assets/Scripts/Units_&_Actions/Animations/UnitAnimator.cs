@@ -58,14 +58,14 @@ public class UnitAnimator : MonoBehaviour
 
     public void SetFacing(Vector2Int dir)
     {
-        bool northSouthDominant = Mathf.Abs(dir.y) >= Mathf.Abs(dir.x);
+        if (dir == Vector2Int.zero) return;
 
-        bool north = northSouthDominant && dir.y > 0;
-        bool south = northSouthDominant && dir.y < 0;
-        bool east  = !northSouthDominant && dir.x > 0;
-        bool west  = !northSouthDominant && dir.x < 0;
-
-        Debug.Log($"SetFacing called - N:{north} S:{south} E:{east} W:{west} | dir:{dir}");
+        // Determine the dominant axis. When |x| == |y| (exact diagonal),
+        // prefer horizontal to avoid north/south flicker on equal components.
+        bool east   = dir.x > 0 && Mathf.Abs(dir.x) >= Mathf.Abs(dir.y);
+        bool west   = dir.x < 0 && Mathf.Abs(dir.x) >= Mathf.Abs(dir.y);
+        bool north  = dir.y > 0 && Mathf.Abs(dir.y) > Mathf.Abs(dir.x);
+        bool south  = dir.y < 0 && Mathf.Abs(dir.y) > Mathf.Abs(dir.x);
 
         anim.SetBool(hashFacingNorth, north);
         anim.SetBool(hashFacingSouth, south);
