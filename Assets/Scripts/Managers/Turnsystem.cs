@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using UnityEngine;
 
 public class TurnSystem : MonoBehaviour
@@ -22,17 +23,26 @@ public class TurnSystem : MonoBehaviour
         Instance = this;
     }
 
-    private void Start()
+    private void OnEnable()
     {
-        if (GameManager.Instance == null) return;
-        if (!GameManager.IsMultiplayer && EnemyManager.Instance != null)
-            EnemyManager.Instance.OnEnemyTurnsComplete += HandleEnemyTurnsComplete;
+        if (!GameManager.IsMultiplayer)
+            StartCoroutine(SubscribeWhenEnemyManagerReady());
     }
 
-    private void OnDestroy()
+    private void OnDisable()
     {
         if (EnemyManager.Instance != null)
             EnemyManager.Instance.OnEnemyTurnsComplete -= HandleEnemyTurnsComplete;
+    }
+
+    private IEnumerator SubscribeWhenEnemyManagerReady()
+    {
+        // Wait for EnemyManager to initialize (late-binding fixes Awake/OnEnable ordering race)
+        while (EnemyManager.Instance == null)
+            yield return null;
+
+        if (!GameManager.IsMultiplayer)
+            EnemyManager.Instance.OnEnemyTurnsComplete += HandleEnemyTurnsComplete;
     }
 
     // ── Public ─────────────────────────────────────────────────────────────
@@ -76,16 +86,22 @@ public class TurnSystem : MonoBehaviour
     {
         playerTurn = true;
 
+        // Only revive once the room truly has no enemies left (combat is fully over)
+        bool combatDone = true;
+        if (EnemyManager.Instance != null)
+        {
+            var currentRoom = RoomManager.Instance?.GetCurrentRoomGrid();
+            combatDone = currentRoom == null || EnemyManager.Instance.GetEnemiesInRoom(currentRoom).Count == 0;
+        }
+
         RecoverPlayerStamina();
-
         InvalidateMoveCache();
-
         OnEnemyPhaseEnd?.Invoke();
         OnTurnChanged?.Invoke(this, EventArgs.Empty);
         OnPlayerTurnBegin?.Invoke();
 
         // Revive any knocked-out party members now that the room is cleared
-        if (PartyManager.IsValid && PartyManager.Instance.PartyUnits.Count > 0)
+        if (combatDone && PartyManager.IsValid && PartyManager.Instance.PartyUnits.Count > 0)
             PartyManager.Instance.ReviveAllKnockedOutUnits();
 
         Debug.Log($"[TurnSystem] Player turn {turnNumber} begins.");
