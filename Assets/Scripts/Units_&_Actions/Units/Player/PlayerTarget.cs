@@ -43,4 +43,28 @@ public class PlayerTarget : MonoBehaviour
         return current == room ||
                current?.gameObject.name == room.gameObject.name;
     }
+
+    /// <summary>Check if the tracked unit was knocked out and switch to an alive party member.</summary>
+    public void CheckIfTrackedUnitKnockedOut()
+    {
+        if (trackedUnit == null) return;
+        var hc = trackedUnit.GetComponent<HealthComponent>();
+        if (hc != null && hc.IsKnockedOut)
+        {
+            // Find an alive party member to switch tracking to
+            if (PartyManager.Instance != null && PartyManager.Instance.PartyUnits.Count > 0)
+            {
+                foreach (var unit in PartyManager.Instance.PartyUnits)
+                {
+                    var uh = unit.GetComponent<HealthComponent>();
+                    if (uh != null && !uh.IsKnockedOut)
+                    {
+                        trackedUnit = unit;
+                        ForceRegister(this, trackedUnit);
+                        break;
+                    }
+                }
+            }
+        }
+    }
 }

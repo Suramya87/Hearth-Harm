@@ -30,10 +30,14 @@ public class HealthComponent : MonoBehaviour
 
     public event Action<int, int> OnHealthChanged;
     public event Action OnDeath;
+    public event Action OnKnockedOut;
+    public event Action OnRevived;
 
     public int CurrentHealth => _currentHealth;
     public int MaxHealth => maxHealth;
     public bool IsDead => _currentHealth <= 0;
+    private bool isKnockedOut;
+    public bool IsKnockedOut => isKnockedOut;
     public float HealthPercent => maxHealth > 0 ? (float)_currentHealth / maxHealth : 0f;
 
     private SpriteRenderer flashRenderer;
@@ -78,6 +82,11 @@ public class HealthComponent : MonoBehaviour
         OnHealthChanged?.Invoke(_currentHealth, maxHealth);
         SpawnDamageNumber(amount);
         TriggerFlash();
+        if (_currentHealth == 0 && !isKnockedOut)
+        {
+            isKnockedOut = true;
+            OnKnockedOut?.Invoke();
+        }
         if (_currentHealth == 0) Die();
     }
 
@@ -94,6 +103,11 @@ public class HealthComponent : MonoBehaviour
         _currentHealth = Mathf.Clamp(value, 0, maxHealth);
         _lastKnownHealth = _currentHealth;
         OnHealthChanged?.Invoke(_currentHealth, maxHealth);
+        if (_currentHealth == 0 && !isKnockedOut)
+        {
+            isKnockedOut = true;
+            OnKnockedOut?.Invoke();
+        }
         if (_currentHealth == 0) Die();
     }
 
@@ -103,6 +117,25 @@ public class HealthComponent : MonoBehaviour
         _currentHealth = maxHealth;
         _lastKnownHealth = _currentHealth;
         OnHealthChanged?.Invoke(_currentHealth, maxHealth);
+    }
+
+    /// <summary>Revives a knocked-out unit to the given HP.</summary>
+    public void Revive(int hp)
+    {
+        isKnockedOut = false;
+        _currentHealth = Mathf.Clamp(hp, 1, maxHealth);
+        _lastKnownHealth = _currentHealth;
+        OnHealthChanged?.Invoke(_currentHealth, maxHealth);
+
+        // Restore grey flash renderer if it was dimmed
+        if (flashRenderer != null)
+        {
+            var c = flashRenderer.color;
+            c.a = 1f;
+            flashRenderer.color = c;
+        }
+
+        OnRevived?.Invoke();
     }
 
     private void SpawnDamageNumber(int amount)
@@ -155,8 +188,12 @@ public class HealthComponent : MonoBehaviour
         var enemy = GetComponent<EnemyUnit>();
         if (enemy != null) return; // EnemyUnit.HandleDeath handles destruction
 
-        if (deathDelay > 0f) Invoke(nameof(ExecuteDeath), deathDelay);
-        else ExecuteDeath();
+        // Don't auto-destroy when knocked out — let the game/room-clear handle it
+        if (!isKnockedOut)
+        {
+            if (deathDelay > 0f) Invoke(nameof(ExecuteDeath), deathDelay);
+            else ExecuteDeath();
+        }
     }
 
     private void ExecuteDeath()

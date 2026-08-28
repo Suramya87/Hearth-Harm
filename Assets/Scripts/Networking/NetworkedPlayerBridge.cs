@@ -68,6 +68,50 @@ public class NetworkedPlayerBridge : NetworkBehaviour
         }
     }
 
+    // ── Room-clear revive (listens to all rooms, not just combat-entry) ────
+
+    private void OnEnable()
+    {
+        if (EnemyManager.Instance != null)
+            EnemyManager.Instance.OnRoomCleared += HandleRoomClearedForRevive;
+    }
+
+    private void OnDisable()
+    {
+        if (EnemyManager.Instance != null)
+            EnemyManager.Instance.OnRoomCleared -= HandleRoomClearedForRevive;
+    }
+
+    private void HandleRoomClearedForRevive(RoomGrid clearedRoom)
+    {
+        // Only the server-host broadcasts the revive RPC to prevent duplicates
+        if (!IsServer) return;
+        RequestReviveAllPartyMembersServerRpc();
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    private void RequestReviveAllPartyMembersServerRpc()
+    {
+        ReviveAllPartyMembersClientRpc(1);
+    }
+
+    [ClientRpc]
+    private void ReviveAllPartyMembersClientRpc(int newHp)
+    {
+        // Revive ourselves if knocked out
+        var hc = GetComponent<HealthComponent>();
+        if (hc != null && hc.IsKnockedOut)
+            hc.Revive(newHp);
+
+        // Restore visuals on our player character
+        var unit = GetComponent<Unit>();
+        if (unit != null)
+        {
+            var pa = unit.GetComponent<PlayerAnimator>();
+            pa?.OnKnockdownChanged(false);
+        }
+    }
+
     // ── Owner setup ────────────────────────────────────────────────────────
 
     private IEnumerator WireUpOwnerSystems()

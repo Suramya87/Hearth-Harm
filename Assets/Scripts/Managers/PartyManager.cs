@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class PartyManager : MonoBehaviour
@@ -12,6 +13,7 @@ public class PartyManager : MonoBehaviour
 
     public event Action<Unit> OnSelectedUnitChanged;
     public event Action OnPartyChanged;
+    public event Action OnKnockedOutUnitsRevived;
 
     [Header("Debug")]
     [SerializeField] private bool useDebugStartingUnit = true;
@@ -70,6 +72,56 @@ public class PartyManager : MonoBehaviour
         SelectUnit(partyUnits[nextIndex]);
     }
 
+    // ── Knockdown handling ───────────────────────────────────────────────────
+
+    private void OnPartyMemberKnockedOut()
+    {
+        // Grey out all party members' sprites and pause animations for those knocked out
+        foreach (var unit in partyUnits)
+        {
+            var hc = unit.GetComponent<HealthComponent>();
+            if (hc != null && hc.IsKnockedOut)
+            {
+                var animator = unit.GetComponent<PlayerAnimator>();
+                animator?.OnKnockdownChanged(true);
+            }
+        }
+
+        // Auto-switch selection if the currently selected unit was knocked out
+        if (selectedUnit != null && PartyManager.IsValid)
+        {
+            var selHc = selectedUnit.GetComponent<HealthComponent>();
+            if (selHc != null && selHc.IsKnockedOut)
+            {
+                // Find first alive party member, fallback to any unit
+                selectedUnit = partyUnits.FirstOrDefault(u =>
+                {
+                    var uh = u.GetComponent<HealthComponent>();
+                    return uh != null && !uh.IsKnockedOut;
+                }) ?? partyUnits[0];
+
+                SelectUnit(selectedUnit);
+            }
+        }
+    }
+
+    public void ReviveAllKnockedOutUnits()
+    {
+        foreach (var unit in partyUnits.ToList())
+        {
+            var hc = unit.GetComponent<HealthComponent>();
+            if (hc != null && hc.IsKnockedOut)
+            {
+                hc.Revive(1);
+
+                // Restore visuals: re-enable animation + restore original color
+                var animator = unit.GetComponent<PlayerAnimator>();
+                animator?.OnKnockdownChanged(false);
+            }
+        }
+        OnKnockedOutUnitsRevived?.Invoke();
+    }
+
     public void RegisterUnit(Unit unit)
     {
         if (this == null || gameObject == null)
@@ -86,6 +138,10 @@ public class PartyManager : MonoBehaviour
             partyUnits.Add(unit);
             OnPartyChanged?.Invoke();
         }
+
+        // Subscribe to knockdown events so we can switch selection and apply visuals
+        var hc = unit.GetComponent<HealthComponent>();
+        if (hc != null) hc.OnKnockedOut += OnPartyMemberKnockedOut;
 
         Debug.Log($"[PartyManager] Registered {unit.name}. Party count = {partyUnits.Count}");
 
@@ -137,6 +193,10 @@ public class PartyManager : MonoBehaviour
     {
         if (unit == null)
             return;
+
+        // Unsubscribe from knockdown events
+        var hc = unit.GetComponent<HealthComponent>();
+        if (hc != null) hc.OnKnockedOut -= OnPartyMemberKnockedOut;
 
         if (partyUnits.Remove(unit))
             OnPartyChanged?.Invoke();

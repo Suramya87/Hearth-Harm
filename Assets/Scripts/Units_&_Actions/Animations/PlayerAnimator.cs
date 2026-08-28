@@ -9,15 +9,29 @@ public class PlayerAnimator : UnitAnimator
 
     private int hashStaminaEmpty, hashRoomTransition, hashClassAbility;
 
-    private PlayerStats playerStats;
+    private SpriteRenderer   spriteRenderer;
+    private PlayerStats      playerStats;
 
     protected override void Awake()
     {
         base.Awake();
         playerStats = GetComponent<PlayerStats>();
+        spriteRenderer = GetComponent<SpriteRenderer>();
 
         hashStaminaEmpty   = Animator.StringToHash(paramStaminaEmpty);
         hashRoomTransition = Animator.StringToHash(paramRoomTransition);
+    }
+
+    /// <summary>Grey out sprite + pause animation when knocked down. Call false to restore.</summary>
+    public void OnKnockdownChanged(bool knockedOut)
+    {
+        anim.enabled = !knockedOut;
+        if (spriteRenderer != null)
+        {
+            var c = spriteRenderer.color;
+            float gray = 0.5f * (c.r + c.g + c.b) / 3f;
+            spriteRenderer.color = knockedOut ? new Color(gray, gray, gray, c.a) : c;
+        }
     }
 
     protected override void OnEnable()

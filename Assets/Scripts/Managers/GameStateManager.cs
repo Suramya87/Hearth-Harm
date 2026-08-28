@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -81,6 +82,19 @@ public class GameStateManager : MonoBehaviour
     private void HandleDeath()
     {
         if (CurrentState != State.Playing) return;
+
+        // In party mode: only trigger game over when ALL party members are knocked out
+        if (PartyManager.Instance != null && PartyManager.Instance.PartyUnits.Count > 0)
+        {
+            bool allDown = PartyManager.Instance.PartyUnits.All(u =>
+            {
+                var hc = u.GetComponent<HealthComponent>();
+                return hc != null && (hc.IsKnockedOut || hc.IsDead);
+            });
+
+            if (!allDown) return; // Some party members are still alive — let knockout handle it
+        }
+
         CurrentState = State.Lost;
         OnGameLost?.Invoke();
         LoseScreen.Show();
@@ -88,6 +102,9 @@ public class GameStateManager : MonoBehaviour
 
     public void NotifyLevelAdvanced()
     {
+        // Revive all knocked-out party members when a room is cleared
+        PartyManager.Instance?.ReviveAllKnockedOutUnits();
+
         CurrentState    = State.Playing;
         subscribed      = false;
         Time.timeScale  = 1f;
