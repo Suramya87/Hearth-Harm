@@ -12,6 +12,7 @@ public class PlayerAnimator : UnitAnimator
     private SpriteRenderer   spriteRenderer;
     private PlayerStats      playerStats;
     private Color            originalSpriteColor;
+    private Animator         cachedAnim;
 
     protected override void Awake()
     {
@@ -28,26 +29,28 @@ public class PlayerAnimator : UnitAnimator
     /// <summary>Grey out sprite + pause animation when knocked down. Call false to restore.</summary>
     public void OnKnockdownChanged(bool knockedOut)
     {
-        anim.enabled = !knockedOut;
-
-        if (spriteRenderer != null)
+        if (knockedOut)
         {
-            if (knockedOut)
+            // Disable animator first to freeze state, then grey out color
+            anim.enabled = false;
+            if (spriteRenderer != null)
             {
                 var c = spriteRenderer.color;
                 float gray = 0.5f * (c.r + c.g + c.b) / 3f;
                 spriteRenderer.color = new Color(gray, gray, gray, c.a);
             }
-            else
-            {
-                // Restore the original color we captured at Awake time
-                spriteRenderer.color = originalSpriteColor;
-            }
         }
-
-        // Clear any death-state animation flag so the animator unpauses from a living state
-        if (!knockedOut)
+        else
+        {
+            // Clear death-state flag BEFORE re-enabling so Animator evaluates idle instead of stuck on death frame
             anim.SetBool(hashIsDead, false);
+
+            if (spriteRenderer != null)
+                spriteRenderer.color = originalSpriteColor;
+
+            // Re-enable animator — it now sees isDead=false and returns to idle
+            anim.enabled = true;
+        }
     }
 
     protected override void OnEnable()

@@ -84,6 +84,10 @@ public class TurnSystem : MonoBehaviour
         OnTurnChanged?.Invoke(this, EventArgs.Empty);
         OnPlayerTurnBegin?.Invoke();
 
+        // Revive any knocked-out party members now that the room is cleared
+        if (PartyManager.IsValid && PartyManager.Instance.PartyUnits.Count > 0)
+            PartyManager.Instance.ReviveAllKnockedOutUnits();
+
         Debug.Log($"[TurnSystem] Player turn {turnNumber} begins.");
     }
 
