@@ -82,6 +82,9 @@ public class UnitAnimator : MonoBehaviour
     private void OnDeath() =>
         anim.SetBool(hashIsDead, true);
 
+    public void ClearDeathState() =>
+        anim.SetBool(hashIsDead, false);
+
     private void OnHealthChanged(int current, int max)
     {
         if (current < max && current > 0)

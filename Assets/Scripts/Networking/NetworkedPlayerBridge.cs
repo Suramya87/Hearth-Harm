@@ -70,40 +70,29 @@ public class NetworkedPlayerBridge : NetworkBehaviour
 
     // ── Room-clear revive (listens to all rooms, not just combat-entry) ────
 
+    // ── Room-clear revive (multiplayer only — each client revives locally) ──
+    // In SP, revival is handled via GameStateManager.NotifyLevelAdvanced() → PartyManager.ReviveAllKnockedOutUnits()
+
     private void OnEnable()
     {
-        if (EnemyManager.Instance != null)
+        if (GameManager.IsMultiplayer && EnemyManager.Instance != null)
             EnemyManager.Instance.OnRoomCleared += HandleRoomClearedForRevive;
     }
 
     private void OnDisable()
     {
-        if (EnemyManager.Instance != null)
+        if (GameManager.IsMultiplayer && EnemyManager.Instance != null)
             EnemyManager.Instance.OnRoomCleared -= HandleRoomClearedForRevive;
     }
 
     private void HandleRoomClearedForRevive(RoomGrid clearedRoom)
     {
-        // Only the server-host broadcasts the revive RPC to prevent duplicates
-        if (!IsServer) return;
-        RequestReviveAllPartyMembersServerRpc();
-    }
-
-    [ServerRpc(RequireOwnership = false)]
-    private void RequestReviveAllPartyMembersServerRpc()
-    {
-        ReviveAllPartyMembersClientRpc(1);
-    }
-
-    [ClientRpc]
-    private void ReviveAllPartyMembersClientRpc(int newHp)
-    {
-        // Revive ourselves if knocked out
+        // Revive ourselves if knocked out (fires on all clients in MP, harmless if already alive)
         var hc = GetComponent<HealthComponent>();
         if (hc != null && hc.IsKnockedOut)
-            hc.Revive(newHp);
+            hc.Revive(1);
 
-        // Restore visuals on our player character
+        // Restore visuals
         var unit = GetComponent<Unit>();
         if (unit != null)
         {

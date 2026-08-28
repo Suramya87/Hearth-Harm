@@ -11,12 +11,15 @@ public class PlayerAnimator : UnitAnimator
 
     private SpriteRenderer   spriteRenderer;
     private PlayerStats      playerStats;
+    private Color            originalSpriteColor;
 
     protected override void Awake()
     {
         base.Awake();
         playerStats = GetComponent<PlayerStats>();
         spriteRenderer = GetComponent<SpriteRenderer>();
+        if (spriteRenderer != null)
+            originalSpriteColor = spriteRenderer.color;
 
         hashStaminaEmpty   = Animator.StringToHash(paramStaminaEmpty);
         hashRoomTransition = Animator.StringToHash(paramRoomTransition);
@@ -26,12 +29,25 @@ public class PlayerAnimator : UnitAnimator
     public void OnKnockdownChanged(bool knockedOut)
     {
         anim.enabled = !knockedOut;
+
         if (spriteRenderer != null)
         {
-            var c = spriteRenderer.color;
-            float gray = 0.5f * (c.r + c.g + c.b) / 3f;
-            spriteRenderer.color = knockedOut ? new Color(gray, gray, gray, c.a) : c;
+            if (knockedOut)
+            {
+                var c = spriteRenderer.color;
+                float gray = 0.5f * (c.r + c.g + c.b) / 3f;
+                spriteRenderer.color = new Color(gray, gray, gray, c.a);
+            }
+            else
+            {
+                // Restore the original color we captured at Awake time
+                spriteRenderer.color = originalSpriteColor;
+            }
         }
+
+        // Clear any death-state animation flag so the animator unpauses from a living state
+        if (!knockedOut)
+            anim.SetBool(hashIsDead, false);
     }
 
     protected override void OnEnable()

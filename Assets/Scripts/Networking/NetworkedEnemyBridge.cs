@@ -146,10 +146,11 @@ public class NetworkedEnemyBridge : NetworkBehaviour
     {
         if (room == null) return null;
 
+        // Single-player party mode: scan all party members for nearest alive target
+        // Single-player: use PartyManager for party-aware targeting (SP code stays in SP files)
         if (!GameManager.IsMultiplayer)
         {
-            var pt = PlayerTarget.Instance;
-            return (pt != null && pt.IsInRoom(room)) ? pt.GetUnit() : null;
+            return PartyManager.FindNearestAlivePlayerInRoom(room, from);
         }
 
         string roomName = room.gameObject.name;

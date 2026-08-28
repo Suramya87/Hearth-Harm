@@ -122,6 +122,40 @@ public class PartyManager : MonoBehaviour
         OnKnockedOutUnitsRevived?.Invoke();
     }
 
+    // ── Single-player party targeting helper ────────────────────────────────
+
+    /// <summary>Find the nearest alive party member in the given room by distance.</summary>
+    public static Unit FindNearestAlivePlayerInRoom(RoomGrid room, GridPosition from)
+    {
+        if (room == null || !IsValid) return null;
+        string roomName = room.gameObject.name;
+        Unit   nearest  = null;
+        int    bestDist = int.MaxValue;
+
+        foreach (var partyUnit in Instance.PartyUnits)
+        {
+            if (partyUnit == null) continue;
+            var hp = partyUnit.GetComponent<HealthComponent>();
+            if (hp != null && (hp.IsDead || hp.IsKnockedOut)) continue;
+
+            var playerRoom = partyUnit.GetCurrentRoomGrid();
+            if (playerRoom == null) continue;
+            if (playerRoom.gameObject.name != roomName) continue;
+
+            int d = from.ManhattanDistance(partyUnit.GetGridPosition());
+            if (d < bestDist) { bestDist = d; nearest = partyUnit; }
+        }
+
+        // Fallback: single-player without PartyManager — use legacy PlayerTarget
+        if (nearest == null)
+        {
+            var pt = PlayerTarget.Instance;
+            return (pt != null && pt.IsInRoom(room)) ? pt.GetUnit() : null;
+        }
+
+        return nearest;
+    }
+
     public void RegisterUnit(Unit unit)
     {
         if (this == null || gameObject == null)

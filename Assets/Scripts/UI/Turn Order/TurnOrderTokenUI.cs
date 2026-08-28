@@ -206,6 +206,11 @@ public class TurnOrderTokenUI : MonoBehaviour, IPointerClickHandler, IPointerEnt
             if (TurnSystem.Instance != null && !TurnSystem.Instance.IsPlayerTurn)
                 return;
 
+            // Don't allow selecting knocked-out players
+            var hc = boundPlayer.GetComponent<HealthComponent>();
+            if (hc != null && hc.IsKnockedOut)
+                return;
+
             if (PartyManager.IsValid)
                 PartyManager.Instance.SelectUnit(boundPlayer);
 
