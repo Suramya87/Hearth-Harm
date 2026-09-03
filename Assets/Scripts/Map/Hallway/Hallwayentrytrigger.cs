@@ -195,6 +195,10 @@ public class HallwayEntryTrigger : MonoBehaviour
             RoomManager.Instance?.SetCurrentRoom(DestinationRoom);
             CameraController2D.Instance?.SnapToTarget();
 
+            // Position followers near the leader after teleporting into the new room.
+            PartyFollowManager.GetOrCreateInstance()
+                .SnapFollowersToEntrance(DestinationRoom.roomGrid, EntryDirection);
+
             SpawnEnemiesForRoom(DestinationRoom);
 
             bool hadEnemies = RoomHasEnemies(DestinationRoom);

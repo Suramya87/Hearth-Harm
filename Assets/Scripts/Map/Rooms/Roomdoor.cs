@@ -81,6 +81,10 @@ public class RoomDoor : MonoBehaviour
         CameraController2D.Instance?.SnapToTarget();
 
         player.GetMoveAction()?.InvalidateCache();
+
+        // Position followers near the leader after teleporting into the new room.
+        PartyFollowManager.GetOrCreateInstance()
+            .SnapFollowersToEntrance(connectedRoom.roomGrid, entryDir);
     }
 
     private static void SpawnEnemiesViaButton(LevelGenerator.PlacedRoom room)
