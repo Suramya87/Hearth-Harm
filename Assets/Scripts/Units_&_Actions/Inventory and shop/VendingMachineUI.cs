@@ -181,7 +181,7 @@ public class VendingMachineUI : MonoBehaviour
         if (characterNameText != null)
         {
             characterNameText.text =
-                selected.name.Replace("(Clone)", "").ToUpper();
+                GetCharacterDisplayName(selected).ToUpper();
         }
 
         RefreshStoreCards(selected);
@@ -798,6 +798,36 @@ public class VendingMachineUI : MonoBehaviour
 
             default:
                 return value.ToString("0");
+        }
+    }
+
+    private string GetCharacterDisplayName(Unit unit)
+    {
+        if (unit == null)
+            return "";
+
+        PlayerStats stats =
+            unit.GetComponent<PlayerStats>();
+
+        if (stats == null)
+            return unit.name.Replace("(Clone)", "");
+
+        switch (stats.playerClass)
+        {
+            case PlayerClass.Knight:
+                return "Smokestack";
+
+            case PlayerClass.Mage:
+                return "Sconstance";
+
+            case PlayerClass.Rogue:
+                return "Rogue";
+
+            case PlayerClass.Cleric:
+                return "Cleric";
+
+            default:
+                return unit.name.Replace("(Clone)", "");
         }
     }
 }

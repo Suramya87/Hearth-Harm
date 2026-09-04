@@ -101,6 +101,10 @@ public class UnitActionSystem : MonoBehaviour
     private void Update()
     {
         if (isBusy) return;
+        // Don't process gameplay input while shopping.
+        if (VendingMachineUI.Instance != null &&
+            VendingMachineUI.Instance.IsOpen)
+            return;
         if (!IsLocalPlayerTurn()) return;
         if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject()) return;
 
@@ -151,19 +155,33 @@ public class UnitActionSystem : MonoBehaviour
 
     public void TakeAction(BaseAction action, Action onComplete)
     {
-        if (!IsLocalPlayerTurn())
+        if (VendingMachineUI.Instance != null &&
+            VendingMachineUI.Instance.IsOpen)
         {
-            Debug.LogWarning("[UnitActionSystem] TakeAction blocked — not player turn.");
+            Debug.Log(
+                "[UnitActionSystem] TakeAction blocked — vending machine is open.");
             return;
         }
-        if (GameManager.IsMultiplayer && !IsOwnedByLocalPlayer(action.GetUnit()))
+
+        if (!IsLocalPlayerTurn())
         {
-            Debug.LogWarning("[UnitActionSystem] TakeAction blocked — not our unit.");
+            Debug.LogWarning(
+                "[UnitActionSystem] TakeAction blocked — not player turn.");
+            return;
+        }
+
+        if (GameManager.IsMultiplayer &&
+            !IsOwnedByLocalPlayer(action.GetUnit()))
+        {
+            Debug.LogWarning(
+                "[UnitActionSystem] TakeAction blocked — not our unit.");
             return;
         }
 
         SetBusy();
+
         OnActionStarted?.Invoke(this, EventArgs.Empty);
+
         action.TakeAction(() =>
         {
             ClearBusy();

@@ -127,6 +127,11 @@ public class CameraController2D : MonoBehaviour
 
     private void Update()
     {
+        if (IsStoreOpen())
+        {
+            transform.position = basePos;
+            return;
+        }
 
         bool playerMoving = followPlayerWhileMoving && IsLocalPlayerMoving();
 
@@ -194,6 +199,11 @@ public class CameraController2D : MonoBehaviour
         transform.position = basePos;
     }
 
+    private bool IsStoreOpen()
+    {
+        return VendingMachineUI.Instance != null &&
+               VendingMachineUI.Instance.IsOpen;
+    }
     private void LateUpdate()
     {
         DoShake();
