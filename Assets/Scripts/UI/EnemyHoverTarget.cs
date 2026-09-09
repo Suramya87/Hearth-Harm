@@ -4,30 +4,32 @@ using UnityEngine;
 public class EnemyHoverTarget : MonoBehaviour
 {
     private EnemyUnit enemyUnit;
-    private HealthComponent health;
 
     private void Awake()
     {
         enemyUnit = GetComponent<EnemyUnit>();
-        health = GetComponent<HealthComponent>();
     }
 
     private void OnMouseEnter()
     {
-        TilemapHighlighter.Instance?.ShowEnemyMoveRange(enemyUnit);
         if (enemyUnit == null || enemyUnit.IsDead)
             return;
 
-        if (health != null)
-            EnemyHealthUI.Instance?.SetTarget(health);
+        // Hover ONLY controls the tile preview.
+        TilemapHighlighter.Instance?.ShowEnemyMoveRange(enemyUnit);
     }
 
     private void OnMouseExit()
     {
+        // Leaving an enemy does NOT affect the enemy UI.
         TilemapHighlighter.Instance?.ClearEnemyPreview();
-        if (enemyUnit == null)
+    }
+
+    private void OnMouseDown()
+    {
+        if (enemyUnit == null || enemyUnit.IsDead)
             return;
 
-        EnemyHealthUI.Instance?.ClearTarget();
+        EnemyHealthUI.Instance?.SelectEnemy(enemyUnit);
     }
 }

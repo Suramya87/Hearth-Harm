@@ -355,7 +355,8 @@ MonoBehaviour:
   spriteChild: {fileID: 0}
   spriteScale: {x: 1, y: 1}
   showDebugLogs: 0
-  selectedVisual: {fileID: 0}
+  selectedVisual: {fileID: 7255050881930481209}
+  portrait: {fileID: 5760282876801141084, guid: 6cc2d9361d7b2a44bb68263c0575dac9, type: 3}
 --- !u!114 &5000342648279679484
 MonoBehaviour:
   m_ObjectHideFlags: 0

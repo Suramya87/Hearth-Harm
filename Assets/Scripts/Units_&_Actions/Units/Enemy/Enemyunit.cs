@@ -19,6 +19,12 @@ public class EnemyUnit : MonoBehaviour, IHasHealth
     [SerializeField] private bool showDebugLogs;
     [SerializeField] private GameObject selectedVisual;
 
+
+
+    public static EnemyUnit SelectedEnemy { get; private set; }
+
+    public static event Action<EnemyUnit> OnSelectedEnemyChanged;
+
     private GridPosition gridPosition;
     private RoomGrid currentRoomGrid;
     private HealthComponent health;
@@ -30,6 +36,12 @@ public class EnemyUnit : MonoBehaviour, IHasHealth
     public event Action<EnemyUnit> OnEnemyDied;
 
     public EnemyStats Stats => stats;
+
+    [Header("UI")]
+    [Header("UI")]
+    [SerializeField] private Sprite portrait;
+
+    public Sprite Portrait => portrait;
     public HealthComponent Health => health;
     public GridPosition GridPosition => gridPosition;
     public RoomGrid CurrentRoomGrid => currentRoomGrid;
@@ -124,7 +136,19 @@ public class EnemyUnit : MonoBehaviour, IHasHealth
 
     public void SetSelected(bool on)
     {
-        if (selectedVisual) selectedVisual.SetActive(on);
+        if (selectedVisual)
+            selectedVisual.SetActive(on);
+
+        if (on)
+        {
+            SelectedEnemy = this;
+            OnSelectedEnemyChanged?.Invoke(this);
+        }
+        else if (SelectedEnemy == this)
+        {
+            SelectedEnemy = null;
+            OnSelectedEnemyChanged?.Invoke(null);
+        }
     }
 
     internal void SyncRoomGrid(RoomGrid room)
@@ -135,6 +159,12 @@ public class EnemyUnit : MonoBehaviour, IHasHealth
 
     private void HandleDeath()
     {
+
+        if (SelectedEnemy == this)
+        {
+            SelectedEnemy = null;
+            OnSelectedEnemyChanged?.Invoke(null);
+        }
         // Guard — HealthComponent.OnDeath could theoretically fire more than
         // once, and OnDestroy also calls cleanup. Only the first call wins.
         if (deathHandled) return;

@@ -12,6 +12,11 @@ public class BossUnit : MonoBehaviour, IHasHealth
     [Header("Stats")]
     [SerializeField] private BossStats bossStats;
 
+    [Header("UI")]
+    [SerializeField] private Sprite portrait;
+
+    public Sprite Portrait => portrait;
+
     [Header("Footprint")]
     [SerializeField] private int footprintSize = 2;
 

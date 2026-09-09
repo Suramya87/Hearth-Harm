@@ -1,11 +1,18 @@
 using UnityEngine;
 
-
 public class EnemyHealthUI : MonoBehaviour
 {
     public static EnemyHealthUI Instance { get; private set; }
 
+    [Header("References")]
+    [SerializeField] private GameObject enemyUIRoot;
     [SerializeField] private EnemyHealthContainerUI healthUI;
+    [SerializeField] private EnemyPortraitUI portraitUI;
+
+    private EnemyUnit currentEnemy;
+
+    public EnemyUnit CurrentEnemy => currentEnemy;
+
     private void Awake()
     {
         if (Instance != null && Instance != this)
@@ -15,66 +22,61 @@ public class EnemyHealthUI : MonoBehaviour
         }
 
         Instance = this;
+
+        if (enemyUIRoot != null)
+            enemyUIRoot.SetActive(false);
     }
 
-    private void Start()
+    public void SelectEnemy(EnemyUnit enemy)
     {
-        if (EnemyManager.Instance != null)
+        if (enemy == null || enemy.IsDead)
+            return;
+
+        if (currentEnemy != null)
         {
-            EnemyManager.Instance.OnEnemyTurnStarted += HandleEnemyTurnStarted;
+            currentEnemy.OnEnemyDied -= HandleEnemyDied;
+            currentEnemy.SetSelected(false);
         }
 
-        if (TurnSystem.Instance != null)
-        {
-            TurnSystem.Instance.OnPlayerTurnBegin += HandlePlayerTurnBegin;
-        }
+        currentEnemy = enemy;
+
+        currentEnemy.SetSelected(true);
+        currentEnemy.OnEnemyDied += HandleEnemyDied;
+
+        enemyUIRoot.SetActive(true);
+
+        portraitUI?.SetEnemy(enemy);
+        healthUI?.SetTarget(enemy.Health);
     }
 
-    private void OnDestroy()
+    private void HandleEnemyDied(EnemyUnit enemy)
     {
-        if (EnemyManager.Instance != null)
-        {
-            EnemyManager.Instance.OnEnemyTurnStarted -= HandleEnemyTurnStarted;
-        }
-
-        if (TurnSystem.Instance != null)
-        {
-            TurnSystem.Instance.OnPlayerTurnBegin -= HandlePlayerTurnBegin;
-        }
-    }
-
-    public void SetTarget(HealthComponent hc)
-    {
-        healthUI?.SetTarget(hc);
+        if (enemy == currentEnemy)
+            ClearTarget();
     }
 
     public void ClearTarget()
     {
+        if (currentEnemy != null)
+        {
+            currentEnemy.OnEnemyDied -= HandleEnemyDied;
+            currentEnemy.SetSelected(false);
+            currentEnemy = null;
+        }
+
         healthUI?.ClearTarget();
+        portraitUI?.ClearPortrait();
+
+        if (enemyUIRoot != null)
+            enemyUIRoot.SetActive(false);
     }
 
-    private void HandleEnemyTurnStarted(EnemyUnit enemy)
+    private void OnDestroy()
     {
-        if (enemy == null)
-        {
-            ClearTarget();
-            return;
-        }
+        if (currentEnemy != null)
+            currentEnemy.OnEnemyDied -= HandleEnemyDied;
 
-        HealthComponent health = enemy.GetComponent<HealthComponent>();
-
-        if (health != null)
-        {
-            SetTarget(health);
-        }
-        else
-        {
-            ClearTarget();
-        }
-    }
-
-    private void HandlePlayerTurnBegin()
-    {
-        ClearTarget();
+        if (Instance == this)
+            Instance = null;
     }
 }

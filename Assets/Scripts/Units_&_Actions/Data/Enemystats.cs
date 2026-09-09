@@ -3,8 +3,16 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "NewEnemyStats", menuName = "Combat/Enemy Stats")]
 public class EnemyStats : ScriptableObject
 {
+
+
     [Header("Identity")]
     public string enemyName = "Enemy";
+
+    [Tooltip("Index used by EnemyPortraitUI to choose this enemy's portrait.")]
+    [Min(0)] public int portraitIndex = 0;
+
+    [Tooltip("Portrait displayed in the enemy combat UI.")]
+    public Sprite portrait;
 
     [Header("Health")]
     [Min(1)] public int maxHealth = 50;

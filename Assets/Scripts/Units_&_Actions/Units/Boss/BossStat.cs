@@ -8,6 +8,9 @@ public class BossStats : ScriptableObject
     public string bossName  = "Boss";
     public int    maxHealth = 300;
 
+    [Tooltip("Index used by EnemyPortraitUI to choose this boss's portrait.")]
+    [Min(0)] public int portraitIndex = 0;
+
     [Header("Movement")]
     [Min(1)] public int moveRange   = 3;
     [Min(1)] public int attackRange = 5;

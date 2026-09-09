@@ -85,6 +85,7 @@ MonoBehaviour:
   spriteScale: {x: 1, y: 1}
   showDebugLogs: 0
   selectedVisual: {fileID: 8570072525550553189}
+  portrait: {fileID: 4654239255888417730, guid: f5f27a11fd9541b49849bb9d39dd305d, type: 3}
 --- !u!114 &6062027027240477414
 MonoBehaviour:
   m_ObjectHideFlags: 0

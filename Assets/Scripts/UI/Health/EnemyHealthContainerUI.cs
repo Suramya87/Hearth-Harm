@@ -1,4 +1,3 @@
-using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -18,12 +17,8 @@ public class EnemyHealthContainerUI : MonoBehaviour, IPointerEnterHandler, IPoin
     [Header("Root")]
     [SerializeField] private GameObject root;
 
-    [Header("Hide")]
-    [SerializeField] private float hideDelay = 2f;
-
     private HealthComponent bound;
     private int currentTier = -1;
-    private Coroutine hideCoroutine;
 
     private void Awake()
     {
@@ -57,12 +52,10 @@ public class EnemyHealthContainerUI : MonoBehaviour, IPointerEnterHandler, IPoin
         if (root != null)
             root.SetActive(true);
 
-        OnHealthChanged(bound.CurrentHealth, bound.MaxHealth);
-
-        if (hideCoroutine != null)
-            StopCoroutine(hideCoroutine);
-
-        hideCoroutine = StartCoroutine(HideAfterDelay());
+        OnHealthChanged(
+            bound.CurrentHealth,
+            bound.MaxHealth
+        );
     }
 
     public void ClearTarget()
@@ -78,12 +71,6 @@ public class EnemyHealthContainerUI : MonoBehaviour, IPointerEnterHandler, IPoin
 
         bound = null;
         currentTier = -1;
-
-        if (hideCoroutine != null)
-        {
-            StopCoroutine(hideCoroutine);
-            hideCoroutine = null;
-        }
     }
 
     private void OnHealthChanged(int cur, int max)
@@ -94,36 +81,43 @@ public class EnemyHealthContainerUI : MonoBehaviour, IPointerEnterHandler, IPoin
         if (healthText != null)
             healthText.text = cur.ToString();
 
-        float pct = max > 0 ? (float)cur / max : 0f;
+        float pct = max > 0
+            ? (float)cur / max
+            : 0f;
+
         UpdateFire(pct);
     }
 
     private void UpdateFire(float pct)
     {
-        int tier = pct > 0.75f ? 3 : pct > 0.5f ? 2 : pct > 0.25f ? 1 : 0;
+        int tier =
+            pct > 0.75f ? 3 :
+            pct > 0.50f ? 2 :
+            pct > 0.25f ? 1 :
+            0;
 
         if (tier == currentTier)
             return;
 
         currentTier = tier;
 
-        if (fireMax != null) fireMax.SetActive(tier == 3);
-        if (fireHigh != null) fireHigh.SetActive(tier == 2);
-        if (fireMedium != null) fireMedium.SetActive(tier == 1);
-        if (fireLow != null) fireLow.SetActive(tier == 0);
+        if (fireMax != null)
+            fireMax.SetActive(tier == 3);
+
+        if (fireHigh != null)
+            fireHigh.SetActive(tier == 2);
+
+        if (fireMedium != null)
+            fireMedium.SetActive(tier == 1);
+
+        if (fireLow != null)
+            fireLow.SetActive(tier == 0);
     }
 
     private void Hide()
     {
         if (root != null)
             root.SetActive(false);
-    }
-
-    private IEnumerator HideAfterDelay()
-    {
-        yield return new WaitForSeconds(hideDelay);
-        Hide();
-        hideCoroutine = null;
     }
 
     public void OnPointerEnter(PointerEventData _)

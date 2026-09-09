@@ -226,50 +226,30 @@ public class TurnOrderTokenUI : MonoBehaviour, IPointerClickHandler, IPointerEnt
         if (TurnSystem.Instance != null && !TurnSystem.Instance.IsPlayerTurn)
             return;
 
-        HealthComponent health = boundEnemy.GetComponent<HealthComponent>();
-        if (health != null)
-            EnemyHealthUI.Instance?.SetTarget(health);
+        EnemyHealthUI.Instance?.SelectEnemy(boundEnemy);
 
         CameraController2D.Instance?.SoftFocusOn(boundEnemy.transform);
         TilemapHighlighter.Instance?.ShowEnemyMoveRange(boundEnemy);
+
+        FlashClick();
     }
 
     public void OnPointerEnter(PointerEventData eventData)
     {
         isHovering = true;
+        RefreshVisualState();
 
-        if (boundPlayer != null)
-        {
-            RefreshVisualState();
-            return;
-        }
-
-        if (boundEnemy == null)
-            return;
-
-        TilemapHighlighter.Instance?.ShowEnemyMoveRange(boundEnemy);
-
-        HealthComponent health = boundEnemy.GetComponent<HealthComponent>();
-        if (health != null)
-            EnemyHealthUI.Instance?.SetTarget(health);
+        if (boundEnemy != null)
+            TilemapHighlighter.Instance?.ShowEnemyMoveRange(boundEnemy);
     }
 
     public void OnPointerExit(PointerEventData eventData)
     {
         isHovering = false;
+        RefreshVisualState();
 
-        if (boundPlayer != null)
-        {
-            RefreshVisualState();
-            return;
-        }
-
-        TilemapHighlighter.Instance?.ClearEnemyPreview();
-
-        if (boundEnemy == null)
-            return;
-
-        EnemyHealthUI.Instance?.ClearTarget();
+        if (boundEnemy != null)
+            TilemapHighlighter.Instance?.ClearEnemyPreview();
     }
 
     private void FlashClick()
