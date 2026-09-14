@@ -276,7 +276,8 @@ public class TurnOrderUI : MonoBehaviour
 
         foreach (Unit unit in allUnits)
         {
-            if (unit == null) continue;
+            if (unit == null || unit.gameObject == null || !unit.gameObject.activeInHierarchy)
+                continue; // skip destroyed/inactive instances from previous level
 
             PlayerStats stats = unit.GetComponent<PlayerStats>();
             if (stats == null) continue;

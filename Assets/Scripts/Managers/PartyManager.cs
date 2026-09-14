@@ -267,4 +267,16 @@ public class PartyManager : MonoBehaviour
             $"Grid={unit.GetGridPosition()}"
         );
     }
+
+    /// <summary>Remove all units with PlayerStats from the party list.
+    public void RemoveAllPlayerUnits()
+    {
+        foreach (var unit in partyUnits.ToList())
+        {
+            if (unit != null && unit.GetComponent<PlayerStats>() != null)
+                UnregisterUnit(unit);
+        }
+
+        partyUnits.RemoveAll(u => u == null);
+    }
 }

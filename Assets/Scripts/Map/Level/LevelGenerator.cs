@@ -112,6 +112,11 @@ public class LevelGenerator : MonoBehaviour
 
         if (spawnPlayerOnGenerate && playerPrefabs != null && playerPrefabs.Count > 0)
         {
+            
+            PartyManager.Instance?.RemoveAllPlayerUnits();
+
+            CleanupExistingCharacters();
+
             SpawnParty(start);
         }
 
@@ -746,6 +751,29 @@ public class LevelGenerator : MonoBehaviour
         Direction.West  => conn.westDoorStrip,
         _               => null
     };
+
+    /// <summary>Destroy any lingering player-like characters from the previous level.
+    /// Prevents SpawnParty from creating duplicates on stage advancement.</summary>
+    private static void CleanupExistingCharacters()
+    {
+        if (PartyManager.Instance == null) return;
+
+        int count = PartyManager.Instance.PartyUnits.Count;
+        for (int i = 0; i < count; i++)
+        {
+            Unit unit = PartyManager.Instance.PartyUnits[i];
+            if (unit == null) continue;
+            if (unit.GetComponent<PlayerStats>() == null) continue;
+
+            GameObject go = unit.gameObject;
+            if (go == null || !go.activeInHierarchy) continue;
+
+            Debug.Log($"[LevelGenerator] Cleaning up old character '{go.name}' before stage advancement.");
+            Destroy(go);
+        }
+
+        PartyManager.Instance.RemoveAllPlayerUnits();
+    }
 
     [ContextMenu("Regenerate Level")]
     public void RegenerateLevel() { ReadPrefabDimensions(); GenerateLevel(); }
